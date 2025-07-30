@@ -8,7 +8,16 @@ import (
 func main() {
 	fmt.Println("Discord Bot starting...")
 
-	// TODO: Add Discord bot token and Gemini API key loading from environment variables
+	discordToken := os.Getenv("DISCORD_TOKEN")
+	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
+
+	if discordToken == "" || geminiAPIKey == "" {
+		fmt.Println("Error: DISCORD_TOKEN and GEMINI_API_KEY must be set as environment variables.")
+		return // Or handle error more gracefully
+	}
+
+	fmt.Println("Successfully loaded configuration.")
+
 	// TODO: Initialize Discord session
 	// TODO: Initialize Gemini client
 	// TODO: Implement message handling and AI interaction
