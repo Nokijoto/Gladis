@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath" // New import
 	"sort"
 	"strings"
 	"syscall"
@@ -15,6 +17,9 @@ import (
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 )
+
+const MAX_IMAGE_SIZE_MB = 20 // Maximum image size for Gemini API (adjust as needed)
+const MAX_IMAGES_PER_MESSAGE = 5 // Maximum number of images to process per message
 
 var (
 	ctx   context.Context
@@ -369,8 +374,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	content := strings.ReplaceAll(m.Content, fmt.Sprintf("<@%s>", s.State.User.ID), "")
 	content = strings.TrimSpace(content)
 
-	if content == "" {
-		// If only the mention was sent, ignore or send a default message
+	// If only the mention was sent and no attachments, ignore
+	if content == "" && len(m.Attachments) == 0 { // This condition remains to ignore empty messages without attachments
 		return
 	}
 
@@ -381,16 +386,78 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	go func() { // Run in a goroutine to avoid blocking Discord session
-		// Send the user message (without mention) to Gemini
-		resp, err := model.GenerateContent(ctx, genai.Text(content))
+		var parts []genai.Part
+
+		// Add text content if available
+		if content != "" {
+			parts = append(parts, genai.Text(content))
+		}
+
+		// Process attachments
+		if len(m.Attachments) > 0 {
+			processedImages := 0
+			for _, attachment := range m.Attachments {
+				if processedImages >= MAX_IMAGES_PER_MESSAGE {
+					sendMessage(s, m.ChannelID, fmt.Sprintf("Too many images. Processing only the first %d images.", MAX_IMAGES_PER_MESSAGE))
+					break
+				}
+
+				// Check if it's an image based on ContentType from Discord
+				if strings.HasPrefix(attachment.ContentType, "image/") {
+					log.Printf("Discord Attachment ContentType for %s: %s", attachment.Filename, attachment.ContentType) // New log for Discord's reported MIME type
+					log.Printf("Downloading image: %s (Size: %d bytes, Type: %s)", attachment.Filename, attachment.Size, attachment.ContentType)
+
+					// Check image size
+					if attachment.Size > MAX_IMAGE_SIZE_MB*1024*1024 {
+						sendMessage(s, m.ChannelID, fmt.Sprintf("Image '%s' is too large (%.2f MB). Maximum allowed size is %d MB.", attachment.Filename, float64(attachment.Size)/(1024*1024), MAX_IMAGE_SIZE_MB))
+						continue
+					}
+
+					imageData, err := downloadImage(attachment.URL)
+					if err != nil {
+						log.Printf("Error downloading image %s: %v", attachment.URL, err)
+						sendMessage(s, m.ChannelID, fmt.Sprintf("Error downloading image '%s'. Please try again.", attachment.Filename))
+						continue
+					}
+
+					ext := strings.ToLower(filepath.Ext(attachment.Filename))
+					var mimeType string
+					switch ext {
+					case ".png":
+						mimeType = "png"
+					case ".jpg", ".jpeg":
+						mimeType = "jpeg"
+					default:
+						log.Printf("Unsupported image format for %s. Extension: %s", attachment.Filename, ext)
+						sendMessage(s, m.ChannelID, fmt.Sprintf("Image '%s': Only PNG and JPEG formats are supported.", attachment.Filename))
+						continue
+					}
+
+					log.Printf("Using MIME type for %s: %s (from extension %s)", attachment.Filename, mimeType, ext) // Log for debugging
+
+					parts = append(parts, genai.ImageData(mimeType, imageData))
+					processedImages++
+				}
+			}
+		}
+
+		if len(parts) == 0 {
+			sendMessage(s, m.ChannelID, "No valid content (text or images) to process.")
+			return
+		}
+
+		// Send the user message (with or without mention) and images to Gemini
+		resp, err := model.GenerateContent(ctx, parts...)
 		if err != nil {
-			// Check for the specific model not found error
 			errorTitle := "Gemini API Error"
 			errorDescription := fmt.Sprintf("Failed to generate content: %v", err)
 
 			if strings.Contains(err.Error(), "models/") && strings.Contains(err.Error(), "not found") {
 				errorTitle = "Model Not Found or Unsupported"
 				errorDescription = fmt.Sprintf("Sorry, the model `%s` does not exist or is not supported. Please use `/setmodel` to choose an available model.", currentModelName)
+			} else if strings.Contains(err.Error(), "400 Bad Request") && strings.Contains(err.Error(), "Image processing error") {
+				errorTitle = "Image Processing Error"
+				errorDescription = "Gemini encountered an error processing the image(s). Please ensure they are valid image files."
 			}
 
 			log.Printf("Gemini Error: %s - %s", errorTitle, errorDescription)
@@ -442,6 +509,26 @@ func isBotMentioned(s *discordgo.Session, m *discordgo.Message) bool {
 		}
 	}
 	return false
+}
+
+// downloadImage downloads an image from the given URL and returns its byte slice.
+func downloadImage(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch image from %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download image from %s: status code %d", url, resp.StatusCode)
+	}
+
+	imageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read image data from %s: %w", url, err)
+	}
+
+	return imageData, nil
 }
 
 // sendLongMessageAsReplies splits a long message into chunks and sends them as replies.
