@@ -57,7 +57,24 @@ func main() {
 	// No defer client.Close() here as the program exits after select{}
 
 	// Get the generative model
-	model = client.GenerativeModel("gemini-pro") // Or another suitable model
+	modelName := "flash-lite-preview-06-17" // Changed model as requested
+	env := os.Getenv("ENVIRONMENT")
+
+	if env == "dev" {
+		log.Println("Running in development mode. Logging errors to app.log")
+		logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			// If log file cannot be opened, log to stderr and continue with default logging
+			log.Printf("Warning: Failed to open log file 'app.log': %v. Using default stderr logging.", err)
+		} else {
+			log.SetOutput(logFile) // Redirect log output to file
+		}
+	} else {
+		log.Println("Running in production mode.")
+		// In production, logs go to stderr by default, which is fine.
+	}
+
+	model = client.GenerativeModel(modelName)
 
 	// Keep the program running until interrupted
 	select {}
