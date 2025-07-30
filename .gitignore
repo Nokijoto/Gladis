@@ -1,0 +1,28 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go tool, specifically for v1.14+
+# * is not a wildcard here, it's a literal asterisk.
+*.out
+
+# Dependency directories (remove the comment to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE settings
+.vscode/
+*.iml
