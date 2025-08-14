@@ -13,7 +13,7 @@ type Manager struct {
 	config       *config.Config
 	geminiClient *GeminiClient
 	openRouter   *OpenRouterClient
-	currentModel string
+	currentModel models.ModelInfo
 	mu           sync.RWMutex
 }
 
@@ -41,30 +41,30 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 		config:       cfg,
 		geminiClient: geminiClient,
 		openRouter:   openRouterClient,
-		currentModel: "gemini-1.5-flash",
+		currentModel: models.ModelInfo{Name: "gemini-2.5-flash-lite", Provider: models.ProviderGemini},
 	}, nil
 }
 
-func (m *Manager) SetModel(model string) error {
+func (m *Manager) SetModel(modelName string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	availableModels := models.GetAvailableModels()
+	var selectedModel models.ModelInfo
 	found := false
 	for _, available := range availableModels {
-		if available == model {
+		if available.Name == modelName {
+			selectedModel = available
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		return fmt.Errorf("model %s is not available", model)
+		return fmt.Errorf("model %s is not available", modelName)
 	}
 
-	provider, _ := models.ParseModelString(model)
-
-	switch provider {
+	switch selectedModel.Provider {
 	case models.ProviderGemini:
 		if m.geminiClient == nil {
 			return fmt.Errorf("Gemini API key not configured")
@@ -75,14 +75,20 @@ func (m *Manager) SetModel(model string) error {
 		}
 	}
 
-	m.currentModel = model
+	m.currentModel = selectedModel
 	return nil
 }
 
-func (m *Manager) GetCurrentModel() string {
+func (m *Manager) GetCurrentModel() models.ModelInfo {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.currentModel
+}
+
+func (m *Manager) SetCurrentModel(model models.ModelInfo) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.currentModel = model
 }
 
 func (m *Manager) GenerateContent(ctx context.Context, prompt string, images [][]byte) (string, error) {
@@ -90,21 +96,19 @@ func (m *Manager) GenerateContent(ctx context.Context, prompt string, images [][
 	currentModel := m.currentModel
 	m.mu.RUnlock()
 
-	provider, modelName := models.ParseModelString(currentModel)
-
-	switch provider {
+	switch currentModel.Provider {
 	case models.ProviderGemini:
 		if m.geminiClient == nil {
 			return "", fmt.Errorf("Gemini client not initialized")
 		}
-		return m.geminiClient.GenerateContent(ctx, prompt, images, modelName)
+		return m.geminiClient.GenerateContent(ctx, prompt, images, currentModel.Name)
 	case models.ProviderOpenRouter:
 		if m.openRouter == nil {
 			return "", fmt.Errorf("OpenRouter client not initialized")
 		}
-		return m.openRouter.GenerateContent(ctx, prompt, images, modelName)
+		return m.openRouter.GenerateContent(ctx, prompt, images, currentModel.Name)
 	default:
-		return "", fmt.Errorf("unknown provider: %s", provider)
+		return "", fmt.Errorf("unknown provider: %s", currentModel.Provider)
 	}
 }
 
