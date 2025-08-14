@@ -18,7 +18,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-const MAX_IMAGE_SIZE_MB = 20 // Maximum image size for Gemini API (adjust as needed)
+const MAX_IMAGE_SIZE_MB = 2 // Reduced maximum image size to 2MB for lower RAM environments
 const MAX_IMAGES_PER_MESSAGE = 5 // Maximum number of images to process per message
 
 var (
@@ -101,30 +101,44 @@ var (
 				return
 			}
 
-			options := []discordgo.SelectMenuOption{}
+			var components []discordgo.MessageComponent
 			for _, modelName := range models {
-				options = append(options, discordgo.SelectMenuOption{
-					Label: modelName,
-					Value: modelName,
+				buttonStyle := discordgo.PrimaryButton
+				if modelName == currentModelName {
+					buttonStyle = discordgo.SuccessButton // Highlight current model
+				}
+				components = append(components, discordgo.Button{
+					Label:    modelName,
+					Style:    buttonStyle,
+					CustomID: "select_gemini_model_" + modelName, // Unique ID for each model button
 				})
 			}
+
+			// Discord allows up to 5 action rows, each with up to 5 buttons.
+			// For simplicity, we'll put all buttons in one row for now, assuming
+			// the number of models is small. If more than 5, we'd need multiple rows.
+			var actionRows []discordgo.MessageComponent
+			if len(components) > 0 {
+				// Split components into rows of max 5 buttons
+				for i := 0; i < len(components); i += 5 {
+					end := i + 5
+					if end > len(components) {
+						end = len(components)
+					}
+					actionRows = append(actionRows, discordgo.ActionsRow{
+						Components: components[i:end],
+					})
+				}
+			}
+
+			responseContent := fmt.Sprintf("Current Gemini model: `%s`\nPlease select a new Gemini model:", currentModelName)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Please select a Gemini model:",
-					Flags:   discordgo.MessageFlagsEphemeral, // Only visible to the user who invoked the command
-					Components: []discordgo.MessageComponent{
-						discordgo.ActionsRow{
-							Components: []discordgo.MessageComponent{
-								discordgo.SelectMenu{
-									CustomID:    "select_gemini_model",
-									Placeholder: "Choose a model...",
-									Options:     options,
-								},
-							},
-						},
-					},
+					Content:    responseContent,
+					Flags:      discordgo.MessageFlagsEphemeral, // Only visible to the user who invoked the command
+					Components: actionRows,
 				},
 			})
 		},
@@ -132,13 +146,20 @@ var (
 )
 
 var componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-	"select_gemini_model": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		data := i.MessageComponentData()
-		selectedModelName := data.Values[0]
+}
+
+func init() {
+	// Dynamically register component handlers for model selection buttons
+	// This allows us to handle any button with a CustomID starting with "select_gemini_model_"
+	// without needing a separate entry for each model.
+	componentHandlers["select_gemini_model_"] = func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		customID := i.MessageComponentData().CustomID
+		selectedModelName := strings.TrimPrefix(customID, "select_gemini_model_")
+		log.Printf("Model selection button clicked. Selected model: %s", selectedModelName)
 
 		newModel, err := initializeGeminiModel(client, selectedModelName)
 		if err != nil {
-			log.Printf("Error setting model to '%s': %v", selectedModelName, err)
+			log.Printf("Error initializing Gemini model '%s' after selection: %v", selectedModelName, err)
 			errMsg := fmt.Sprintf("Error setting model: %v", err)
 			if strings.Contains(err.Error(), "not found or unsupported") {
 				errMsg = fmt.Sprintf("Error: %v. Call ListModels to see the list of available models and their supported methods.", err)
@@ -148,26 +169,33 @@ var componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.Inter
 				Description: errMsg,
 				Color:       0xFF0000, // Red color for errors
 			}
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			respErr := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseUpdateMessage,
 				Data: &discordgo.InteractionResponseData{
 					Embeds:     []*discordgo.MessageEmbed{embed},
 					Components: []discordgo.MessageComponent{}, // Remove components
 				},
 			})
+			if respErr != nil {
+				log.Printf("Error responding to interaction after model setting failure: %v", respErr)
+			}
 			return
 		}
 
 		model = newModel
 		currentModelName = selectedModelName
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		log.Printf("Gemini model successfully set to: %s", currentModelName)
+		respErr := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseUpdateMessage,
 			Data: &discordgo.InteractionResponseData{
 				Content:    fmt.Sprintf("✅ Gemini model set to: `%s`", currentModelName),
 				Components: []discordgo.MessageComponent{}, // Remove components
 			},
 		})
-	},
+		if respErr != nil {
+			log.Printf("Error responding to interaction after successful model setting: %v", respErr)
+		}
+	}
 }
 
 func main() {
@@ -217,8 +245,18 @@ func main() {
 				h(s, i)
 			}
 		case discordgo.InteractionMessageComponent:
-			if h, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
+			customID := i.MessageComponentData().CustomID
+			// Check for exact matches first
+			if h, ok := componentHandlers[customID]; ok {
 				h(s, i)
+				return
+			}
+			// Check for prefix matches (for dynamic buttons like model selection)
+			for prefix, h := range componentHandlers {
+				if strings.HasPrefix(customID, prefix) {
+					h(s, i)
+					return
+				}
 			}
 		}
 	})
@@ -263,7 +301,7 @@ func main() {
 
 	// Initialize Gemini client globally
 	ctx = context.Background()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(geminiAPIKey))
+	client, err = genai.NewClient(ctx, option.WithAPIKey(geminiAPIKey))
 	if err != nil {
 		log.Fatalf("Failed to create Gemini client: %v", err)
 	}
@@ -309,8 +347,14 @@ func main() {
 // It returns an error if the model is not found or unsupported.
 func initializeGeminiModel(client *genai.Client, modelName string) (*genai.GenerativeModel, error) {
 	m := client.GenerativeModel(modelName)
-	// No direct validation via m.Config() as it's not available.
-	// The GenerateContent call will fail if the model is invalid.
+
+	// Perform a quick test generation to validate the model
+	_, err := m.GenerateContent(context.Background(), genai.Text("test"))
+	if err != nil {
+		// If the test generation fails, it means the model is likely invalid or inaccessible.
+		return nil, fmt.Errorf("failed to initialize model '%s': %w", modelName, err)
+	}
+
 	return m, nil
 }
 
@@ -324,26 +368,13 @@ func sendMessage(s *discordgo.Session, channelID, content string) {
 
 // getAvailableModels fetches a list of available Gemini models that support content generation.
 func getAvailableModels(client *genai.Client) ([]string, error) {
-	if client == nil {
-		return nil, fmt.Errorf("Gemini client is not initialized")
+	// Return a hardcoded list of models as requested
+	models := []string{
+		"gemini-2.5-pro",
+		"gemini-2.5-flash",
+		"gemini-2.5-flash-lite",
 	}
-
-	iter := client.ListModels(ctx)
-	var models []string
-	for {
-		model, err := iter.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error listing models: %w", err)
-		}
-		// Only include models that support content generation
-		if contains(model.SupportedGenerationMethods, "generateContent") {
-			models = append(models, strings.TrimPrefix(model.Name, "models/"))
-		}
-	}
-	sort.Strings(models) // Sort models alphabetically
+	sort.Strings(models) // Ensure they are sorted alphabetically
 	return models, nil
 }
 
