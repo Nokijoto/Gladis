@@ -1,30 +1,33 @@
-# Stage 1: Build the Go application
+# syntax=docker/dockerfile:1
+
+# Etap 1. Build aplikacji Go
 FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Copy go.mod and go.sum first to leverage Docker cache
+# Zależności najpierw dla cache
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the rest of the application source code
+# Kopiujemy resztę źródeł
 COPY . .
 
-# Build the Go application statically
-# CGO_ENABLED=0 disables Cgo, GOOS=linux sets the target OS, GOARCH=amd64 sets the target architecture
-# -ldflags="-w -s" strips debug information to reduce binary size
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o discord-gemini-bot main.go
 
-# Stage 2: Create a minimal image with the compiled binary
-FROM alpine:latest
+# Budowanie statycznej binarki z katalogu cmd/bot
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -buildvcs=false -ldflags="-w -s" \
+    -o /out/discord-gemini-bot ./cmd/bot
 
-WORKDIR /root/
+# Etap 2. Minimalny runtime
+FROM alpine:3.20
 
-# Copy the compiled binary from the builder stage
-COPY --from=builder /app/discord-gemini-bot .
+WORKDIR /app
 
-# Expose any necessary ports (though Discord bots don't typically expose ports for incoming connections)
-# EXPOSE 8080
+# Użytkownik nieuprzywilejowany
+RUN adduser -D -u 10001 appuser
 
-# Command to run the executable
-CMD ["./discord-gemini-bot"]
+# Kopiujemy binarkę
+COPY --from=builder /out/discord-gemini-bot /app/discord-gemini-bot
+
+USER appuser
+ENTRYPOINT ["/app/discord-gemini-bot"]

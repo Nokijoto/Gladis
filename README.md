@@ -1,49 +1,94 @@
-# Discord Bot z Google Gemini AI
+# Gladis Discord Bot
 
-Ten dokument opisuje kroki potrzebne do stworzenia, optymalizacji i wdrożenia bota na Discordzie, który działa jako proxy dla API Google Gemini. Projekt zostanie napisany w języku Go, z naciskiem na minimalne zużycie zasobów (RAM, CPU).
+Gladis is a versatile Discord bot built with Go, designed to integrate various AI models and provide interactive functionalities within your Discord server. It supports multiple AI backends (currently Gemini and OpenRouter) and offers commands for managing AI interactions, setting context, and configuring system prompts.
 
-## Plan Działania:
+## Features
 
-#### Faza 1: Inicjalizacja i Konfiguracja Projektu
+- **AI Integration**: Connects to Gemini and OpenRouter APIs for advanced AI capabilities.
+- **Configurable AI Models**: Easily switch between different AI models.
+- **Context Management**: Control the number of previous messages sent to the AI for better conversational flow.
+- **Custom System Prompts**: Set a custom system prompt to guide the AI's behavior.
+- **Logging**: Integrates with a logging system, with optional webhook support for external log monitoring.
+- **Discord Commands**:
+    - `/help`: Displays a list of available commands.
+    - `/ping`: Tests the bot's responsiveness.
+    - `/setcontext`: Sets the number of previous messages to send to the bot (0-10).
+    - `/setmodel`: Interactively changes the AI model being used.
+    - `/setsystemprompt`: Sets a custom message that is always sent to the bot.
 
-1.  **Inicjalizacja Repozytorium Git**: Stworzenie lokalnego repozytorium do śledzenia zmian w kodzie (`git init`).
-2.  **Stworzenie Pliku `.gitignore`**: Zdefiniowanie plików, które Git ma ignorować (np. skompilowane binarki).
-3.  **Inicjalizacja Modułu Go**: Uruchomienie `go mod init` w celu zarządzania zależnościami projektu.
-4.  **Stworzenie Głównej Struktury Projektu**: Utworzenie pliku `main.go` jako punktu wejściowego aplikacji.
+## Getting Started
 
-#### Faza 2: Implementacja Rdzenia Bota
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-5.  **Dodanie Zależności**: Pobranie niezbędnych bibliotek: `discordgo` do obsługi Discorda i oficjalnego SDK Google dla Gemini.
-6.  **Konfiguracja Aplikacji**: Implementacja wczytywania kluczy API (Discord Bot Token, Gemini API Key) ze zmiennych środowiskowych, aby uniknąć zapisywania ich w kodzie. Stworzenie pliku `.env.example` jako szablonu.
-7.  **Podstawowa Logika Bota Discord**: Nawiązanie połączenia z API Discorda i implementacja prostej komendy testowej (np. `!ping`), aby potwierdzić, że bot działa.
+### Prerequisites
 
-#### Faza 3: Integracja z Google Gemini
+- Go (version 1.21 or higher)
+- Discord Bot Token
+- API Key for Gemini or OpenRouter (or both)
 
-8.  **Implementacja Klienta Gemini**: Stworzenie funkcji, która będzie wysyłać zapytania tekstowe do API Google Gemini i odbierać odpowiedzi.
-9.  **Połączenie Logiki Bota z Gemini**: Zintegrowanie klienta Gemini z handlerem wiadomości na Discordzie. Bot będzie przechwytywał wiadomości, przesyłał je do AI i odsyłał odpowiedź na kanał.
+### Installation
 
-#### Faza 4: Optymalizacja i Wdrożenie
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Nokijoto/Gladis.git
+   cd Gladis
+   ```
 
-10. **Obsługa Błędów i Logowanie**: Zapewnienie stabilności przez dodanie obsługi błędów (np. problemów z siecią) i prostego logowania zdarzeń.
-11. **Optymalizacja Zużycia Pamięci**: Przegląd kodu w celu zminimalizowania alokacji pamięci i zapewnienia płynnego działania na 256 MB RAM.
-12. **Przygotowanie do Wdrożenia (Dockerfile)**: Stworzenie `Dockerfile` z wykorzystaniem "multi-stage build", aby skompilować aplikację do małej, statycznej binarki i umieścić ją w minimalnym obrazie kontenera (np. `scratch` lub `alpine`).
-13. **Dokumentacja Projektu**: Zaktualizowanie pliku `README.md` o instrukcje dotyczące budowania, konfiguracji i uruchamiania bota.
+2. **Set up environment variables:**
+   Create a `.env` file in the root directory of the project and add the following:
 
-## Instalacja Go:
+   ```
+   DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+   GEMINI_API_KEY=YOUR_GEMINI_API_KEY # Optional, if using Gemini
+   OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY # Optional, if using OpenRouter
+   ENVIRONMENT=development # or production
+   WEBHOOK_URL=YOUR_WEBHOOK_URL # Optional, for logging to a webhook
+   ```
+   Replace `YOUR_DISCORD_BOT_TOKEN`, `YOUR_GEMINI_API_KEY`, `YOUR_OPENROUTER_API_KEY`, and `YOUR_WEBHOOK_URL` with your actual keys and URLs.
 
-Ponieważ Go nie jest zainstalowany, oto kroki, które możesz wykonać, aby go zainstalować:
+3. **Run the bot:**
+   ```bash
+   go run cmd/bot/main.go
+   ```
+   The bot should now be running and connected to your Discord server.
 
-1.  **Pobierz Go**: Odwiedź oficjalną stronę [https://go.dev/dl/](https://go.dev/dl/) i pobierz najnowszą stabilną wersję dla swojego systemu operacyjnego.
-2.  **Zainstaluj Go**: Postępuj zgodnie z instrukcjami instalacji dla Twojego systemu. Zazwyczaj obejmuje to rozpakowanie archiwum i dodanie katalogu `bin` Go do zmiennej środowiskowej `PATH`.
-    *   **Linux/macOS**:
-        ```bash
-        # Przykład dla Linuxa, ścieżka może się różnić
-        wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz # Zmień wersję i architekturę jeśli potrzebujesz
-        sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
-        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.zshrc # Lub ~/.bashrc jeśli używasz bash
-        source ~/.zshrc # Lub source ~/.bashrc
-        ```
-    *   **Windows**: Uruchom pobrany instalator MSI.
-3.  **Zweryfikuj Instalację**: Otwórz nowy terminal i wpisz `go version`. Powinieneś zobaczyć zainstalowaną wersję Go.
+## Project Structure
 
-Po zainstalowaniu Go, będziemy mogli kontynuować z inicjalizacją modułu Go (`go mod init gladis`).
+```
+.
+├── cmd/
+│   └── bot/
+│       └── main.go           # Main entry point for the Discord bot
+├── internal/
+│   ├── ai/
+│   │   ├── gemini.go         # Gemini AI integration
+│   │   ├── manager.go        # Manages AI model interactions
+│   │   └── openrouter.go     # OpenRouter AI integration
+│   ├── config/
+│   │   └── config.go         # Configuration loading and management
+│   ├── discord/
+│   │   ├── bot.go            # Discord bot core logic
+│   │   └── commands/         # Discord command definitions and handlers
+│   │       ├── commands.go
+│   │       ├── help.go
+│   │       ├── info.go
+│   │       ├── ping.go
+│   │       ├── setcontext.go
+│   │       ├── setmodel.go
+│   │       └── setsystemprompt.go
+│   ├── logger/
+│   │   └── logger.go         # Logging utility
+│   └── models/
+│       └── models.go         # Data models
+├── go.mod                    # Go module dependencies
+├── go.sum                    # Go module checksums
+└── README.md                 # This file
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
