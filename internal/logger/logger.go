@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // LogLevel defines the severity of a log message.
@@ -47,6 +49,8 @@ func InitLogger() {
 	if webhookURL == "" {
 		log.Println("WEBHOOK_URL not set. Logs will not be sent to webhook.")
 	}
+	// Log the Webhook URL for verification purposes
+	fmt.Println("WEBHOOK_URL:", webhookURL)
 }
 
 // SetLevel sets the minimum log level to be logged.
@@ -78,7 +82,7 @@ func Log(level LogLevel, message string, context string) {
 
 	// Send to webhook if URL is set and level is appropriate
 	if webhookURL != "" && (level == LevelError || level == LevelFatal || level == LevelWarn) {
-		go sendToWebhook(logJSON)
+		go sendToWebhookAsEmbed(logEntry)
 	}
 }
 
@@ -127,9 +131,46 @@ func TryCatch(fn func() error, context string) error {
 	return nil
 }
 
-// sendToWebhook sends a JSON log message to the configured webhook URL.
-func sendToWebhook(logData []byte) {
-	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(logData))
+// sendToWebhookAsEmbed sends a log entry as an embed to the configured webhook URL.
+func sendToWebhookAsEmbed(logEntry LogMessage) {
+	// Create the embed to send to the webhook
+	embed := &discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("🔴 %s Log", logEntry.Level),
+		Description: logEntry.Message,
+		Color:       getLogColor(logEntry.Level),
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "**Context**",
+				Value:  logEntry.Context,
+				Inline: false,
+			},
+			{
+				Name:   "**Timestamp**",
+				Value:  logEntry.Timestamp.Format(time.RFC3339),
+				Inline: true,
+			},
+			{
+				Name:   "**Error (if any)**",
+				Value:  logEntry.Error,
+				Inline: false,
+			},
+		},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("Log sent at %s", logEntry.Timestamp.Format(time.RFC3339)),
+		},
+	}
+
+	// Send the embed to the webhook
+	reqBody := map[string]interface{}{
+		"embeds": []interface{}{embed},
+	}
+	reqJSON, err := json.Marshal(reqBody)
+	if err != nil {
+		log.Printf("Failed to marshal embed message: %v", err)
+		return
+	}
+
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(reqJSON))
 	if err != nil {
 		log.Printf("Failed to create webhook request: %v", err)
 		return
@@ -147,7 +188,28 @@ func sendToWebhook(logData []byte) {
 	}
 	defer resp.Body.Close()
 
+	// Log the response code
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		log.Printf("Webhook returned non-OK status: %s", resp.Status)
+	} else {
+		log.Printf("Webhook response status: %s", resp.Status)
+	}
+}
+
+// getLogColor returns a color code based on the log level.
+func getLogColor(level LogLevel) int {
+	switch level {
+	case LevelDebug:
+		return 0x7289DA // Blue for debug
+	case LevelInfo:
+		return 0x00FF00 // Green for info
+	case LevelWarn:
+		return 0xFFFF00 // Yellow for warnings
+	case LevelError:
+		return 0xFF0000 // Red for errors
+	case LevelFatal:
+		return 0xFF0000 // Red for fatal errors
+	default:
+		return 0xFFFFFF // White for unknown levels
 	}
 }

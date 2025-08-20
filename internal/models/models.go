@@ -1,4 +1,5 @@
 package models
+
 const (
 	MAX_IMAGE_SIZE_MB      = 2
 	MAX_IMAGES_PER_MESSAGE = 5
@@ -74,6 +75,7 @@ func GetModelsPage4() []ModelInfo {
 		{Name: "shisa-ai/shisa-v2-llama3.3-70b:free", Provider: ProviderOpenRouter},
 		{Name: "arliai/qwq-32b-arliai-rpr-v1:free", Provider: ProviderOpenRouter},
 	}
+
 }
 
 func GetModelsPage5() []ModelInfo {
@@ -89,6 +91,7 @@ func GetModelsPage5() []ModelInfo {
 		{Name: "qwen/qwen-2.5-coder-32b-instruct:free", Provider: ProviderOpenRouter},
 		{Name: "qwen/qwen-2.5-72b-instruct:free", Provider: ProviderOpenRouter},
 	}
+
 }
 
 func GetModelsPage6() []ModelInfo {
@@ -112,33 +115,4 @@ func GetAllModels() []ModelInfo {
 	allModels = append(allModels, GetModelsPage5()...)
 	allModels = append(allModels, GetModelsPage6()...)
 	return allModels
-}
-
-func GetAvailableModels(page int, modelsPerPage int) ([]ModelInfo, int) {
-	allModels := GetAllModels()
-	totalModels := len(allModels)
-	totalPages := (totalModels + modelsPerPage - 1) / modelsPerPage
-
-	// Ensure page is within valid bounds
-	if page < 0 {
-		page = 0
-	}
-	if page >= totalPages && totalPages > 0 {
-		page = totalPages - 1
-	}
-	if totalPages == 0 { // Safety check for no models
-		return []ModelInfo{}, 0
-	}
-
-	startIndex := page * modelsPerPage
-	endIndex := startIndex + modelsPerPage
-
-	if startIndex >= totalModels {
-		return []ModelInfo{}, totalPages
-	}
-	if endIndex > totalModels {
-		endIndex = totalModels
-	}
-
-	return allModels[startIndex:endIndex], totalPages
 }

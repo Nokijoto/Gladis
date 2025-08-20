@@ -49,7 +49,8 @@ func (m *Manager) SetModel(modelName string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	availableModels := models.GetAvailableModels()
+	// Use GetAllModels() which returns a single slice of all models.
+	availableModels := models.GetAllModels()
 	var selectedModel models.ModelInfo
 	found := false
 	for _, available := range availableModels {

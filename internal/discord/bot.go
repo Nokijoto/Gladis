@@ -8,15 +8,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"gladis/internal/ai"
 	"gladis/internal/logger" // Import the logger package
+
+	"github.com/bwmarrin/discordgo"
+
+	commands "gladis/internal/discord/commands" // Import the new commands package
 )
 
 type Bot struct {
-	session        *discordgo.Session
-	aiManager      *ai.Manager
-	commandHandler *CommandHandler
+	session       *discordgo.Session
+	aiManager     *ai.Manager
+	systemPrompt  string // Added systemPrompt field
+	contextLength int    // Added contextLength field
+	// commandHandler *CommandHandler // Removed as CommandHandler is no longer a single struct
 }
 
 func NewBot(token string, aiManager *ai.Manager) (*Bot, error) {
@@ -30,6 +35,9 @@ func NewBot(token string, aiManager *ai.Manager) (*Bot, error) {
 	bot := &Bot{
 		session:   session,
 		aiManager: aiManager,
+		// Initialize systemPrompt and contextLength here if they have default values
+		systemPrompt:  "",
+		contextLength: 0,
 	}
 
 	bot.setupHandlers()
@@ -41,8 +49,8 @@ func (b *Bot) setupHandlers() {
 	b.session.AddHandler(b.messageCreateHandler)
 	b.session.AddHandler(b.interactionCreateHandler)
 
-	// Initialize CommandHandler with the AI manager
-	b.commandHandler = NewCommandHandler(b.aiManager)
+	// CommandHandler is no longer a single struct. Handlers are now in separate files.
+	// We will manage command registration and dispatching differently.
 }
 
 func (b *Bot) readyHandler(s *discordgo.Session, event *discordgo.Ready) {
@@ -85,8 +93,8 @@ func (b *Bot) messageCreateHandler(s *discordgo.Session, m *discordgo.MessageCre
 	prompt = strings.TrimSpace(prompt)
 
 	// Fetch recent messages for context if contextLength is greater than 0
-	if b.commandHandler.contextLength > 0 {
-		messages, err := s.ChannelMessages(m.ChannelID, b.commandHandler.contextLength, m.ID, "", "")
+	if b.contextLength > 0 {
+		messages, err := s.ChannelMessages(m.ChannelID, b.contextLength, m.ID, "", "")
 		if err != nil {
 			logger.Error("Failed to fetch channel messages for context", "messageCreateHandler", err)
 			// Continue without context if there's an error fetching messages
@@ -108,8 +116,8 @@ func (b *Bot) messageCreateHandler(s *discordgo.Session, m *discordgo.MessageCre
 	}
 
 	// Prepend system prompt if it exists
-	if b.commandHandler.systemPrompt != "" {
-		prompt = b.commandHandler.systemPrompt + "\n" + prompt
+	if b.systemPrompt != "" {
+		prompt = b.systemPrompt + "\n" + prompt
 	}
 
 	// Use logger.TryCatch for AI content generation
@@ -190,63 +198,25 @@ func (b *Bot) interactionCreateHandler(s *discordgo.Session, i *discordgo.Intera
 }
 
 func (b *Bot) handleMessageComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	data := i.MessageComponentData()
-	// The CustomID for model selection now includes the page number, e.g., "model_select_0"
-	if strings.HasPrefix(data.CustomID, "model_select_") {
-		if len(data.Values) == 0 {
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "No model selected.",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
-			return
-		}
-
-		chosenModelName := data.Values[0]
-		err := b.aiManager.SetModel(chosenModelName)
-		if err != nil {
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseUpdateMessage,
-				Data: &discordgo.InteractionResponseData{
-					Content:    fmt.Sprintf("Failed to set model: %s", err.Error()),
-					Flags:      discordgo.MessageFlagsEphemeral,
-					Components: []discordgo.MessageComponent{},
-				},
-			})
-			return
-		}
-		// Update the command handler's model after successful setting in aiManager
-		b.commandHandler.currentModel = b.aiManager.GetCurrentModel()
-
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseUpdateMessage,
-			Data: &discordgo.InteractionResponseData{
-				Content:    fmt.Sprintf("Model changed to: `%s` (Provider: `%s`)", b.commandHandler.currentModel.Name, b.commandHandler.currentModel.Provider),
-				Flags:      discordgo.MessageFlagsEphemeral,
-				Components: []discordgo.MessageComponent{},
-			},
-		})
-	} else if strings.HasPrefix(data.CustomID, "model_prev_") || strings.HasPrefix(data.CustomID, "model_next_") {
-		b.commandHandler.HandleComponent(s, i)
-	}
+	// Delegate handling of message components to the commands package, specifically for setmodel interactions.
+	// The HandleInteraction function in setmodel.go is designed to handle both pagination and model selection.
+	commands.HandleInteraction(s, i, b.aiManager)
 }
 
 func (b *Bot) handleApplicationCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch i.ApplicationCommandData().Name {
 	case "ping":
-		b.commandHandler.HandlePing(s, i)
+		commands.HandlePing(s, i) // Call the HandlePing from the commands package
 	case "help":
-		b.commandHandler.HandleHelp(s, i)
+		commands.HandleHelp(s, i) // Call the HandleHelp from the commands package
 	case "setmodel":
-		b.commandHandler.HandleSetModel(s, i)
+		commands.HandleSetModel(s, i, b.aiManager) // Pass AI manager
 	case "info":
-		b.commandHandler.HandleInfo(s, i)
+		commands.HandleInfo(s, i, b.aiManager, &b.systemPrompt, &b.contextLength) // Pass AI manager, systemPrompt, contextLength
 	case "setsystemprompt":
-		b.commandHandler.HandleSetSystemPrompt(s, i)
+		commands.HandleSetSystemPrompt(s, i, &b.systemPrompt) // Pass systemPrompt
 	case "setcontext":
-		b.commandHandler.HandleSetContext(s, i)
+		commands.HandleSetContext(s, i, &b.contextLength) // Pass contextLength
 	}
 }
 
@@ -259,15 +229,23 @@ func (b *Bot) Stop() error {
 }
 
 func (b *Bot) RegisterCommands() error {
-	commands := Commands
-	_, err := b.session.ApplicationCommandBulkOverwrite(b.session.State.User.ID, "", commands)
+	// Aggregate commands from all command files
+	allCommands := []*discordgo.ApplicationCommand{}
+	allCommands = append(allCommands, commands.PingCommand)
+	allCommands = append(allCommands, commands.HelpCommand)
+	allCommands = append(allCommands, commands.SetModelCommand)
+	allCommands = append(allCommands, commands.InfoCommand)
+	allCommands = append(allCommands, commands.SetSystemPromptCommand)
+	allCommands = append(allCommands, commands.SetContextCommand)
+
+	_, err := b.session.ApplicationCommandBulkOverwrite(b.session.State.User.ID, "", allCommands)
 	return err
 }
 
-func (b *Bot) UpdateCommandHandlerModel() {
-	b.commandHandler.currentModel = b.aiManager.GetCurrentModel()
-}
+// Removed UpdateCommandHandlerModel and GetSystemPrompt as CommandHandler is removed.
+// These functionalities should be managed by the AI manager or individual command handlers.
 
-func (b *Bot) GetSystemPrompt() string {
-	return b.commandHandler.systemPrompt
-}
+// Removed CommandHandler struct, AIModelManager interface, NewCommandHandler, clampInt,
+// and all methods associated with CommandHandler (HandlePing, HandleSetContext, HandleInfo,
+// HandleSetSystemPrompt, HandleHelp, HandleSetModel, sendModelSelect, HandleComponent).
+// These have been moved to their respective command files.
