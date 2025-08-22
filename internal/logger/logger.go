@@ -48,9 +48,9 @@ func InitLogger() {
 	}
 	if webhookURL == "" {
 		log.Println("WEBHOOK_URL not set. Logs will not be sent to webhook.")
+	} else {
+		log.Println("WEBHOOK_URL loaded successfully")
 	}
-	// Log the Webhook URL for verification purposes
-	fmt.Println("WEBHOOK_URL:", webhookURL)
 }
 
 // SetLevel sets the minimum log level to be logged.
