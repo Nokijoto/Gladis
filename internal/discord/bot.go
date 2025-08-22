@@ -19,6 +19,11 @@ import (
 	commands "gladis/internal/discord/commands" // Import the new commands package
 )
 
+// init initializes the random seed for the package
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 type Bot struct {
 	session       *discordgo.Session
 	aiManager     *ai.Manager
@@ -43,8 +48,6 @@ func NewBot(token string, aiManager *ai.Manager, giphyAPIKey string) (*Bot, erro
 		contextLength: 0,
 		giphyAPIKey:   giphyAPIKey, // Initialize giphyAPIKey
 	}
-
-	rand.Seed(time.Now().UnixNano()) // Initialize random seed
 
 	bot.setupHandlers()
 	return bot, nil

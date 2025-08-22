@@ -181,11 +181,24 @@ func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, aiM
 			// Handle model selection from the dropdown
 			if len(i.MessageComponentData().Values) > 0 {
 				selectedModelName := i.MessageComponentData().Values[0]
+
+				// Validate selected model name
+				if selectedModelName == "" {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Error: Invalid model selection.",
+							Flags:   discordgo.MessageFlagsEphemeral,
+						},
+					})
+					return
+				}
+
 				currentModel := aiManager.GetCurrentModel()
 
 				if selectedModelName != currentModel.Name {
 					allModels := models.GetAllModels()
-					var newModel *models.ModelInfo // Corrected to models.ModelInfo
+					var newModel *models.ModelInfo
 					for _, m := range allModels {
 						if m.Name == selectedModelName {
 							newModel = &m
@@ -194,7 +207,16 @@ func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, aiM
 					}
 
 					if newModel != nil {
-						aiManager.SetModel(newModel.Name) // Corrected to pass model name string
+						if err := aiManager.SetModel(newModel.Name); err != nil {
+							s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+								Type: discordgo.InteractionResponseChannelMessageWithSource,
+								Data: &discordgo.InteractionResponseData{
+									Content: fmt.Sprintf("Error setting model: %v", err),
+									Flags:   discordgo.MessageFlagsEphemeral,
+								},
+							})
+							return
+						}
 						responseContent := fmt.Sprintf("Model updated to: `%s` (Provider: `%s`)", newModel.Name, newModel.Provider)
 						s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 							Type: discordgo.InteractionResponseChannelMessageWithSource,

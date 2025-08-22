@@ -115,7 +115,10 @@ func (m *Manager) GenerateContent(ctx context.Context, prompt string, images [][
 
 func (m *Manager) Close() error {
 	if m.geminiClient != nil {
-		return m.geminiClient.Close()
+		if err := m.geminiClient.Close(); err != nil {
+			return fmt.Errorf("failed to close Gemini client: %w", err)
+		}
 	}
+	// Note: OpenRouter client uses standard HTTP client, no explicit close needed
 	return nil
 }

@@ -32,11 +32,15 @@ func main() {
 	if webhookURL == "" {
 		logger.Warn("WEBHOOK_URL is not set. Logs will not be sent to webhook.", "main")
 	} else {
-		// Optional: Log the webhook URL for verification purposes (only in debug mode)
-		fmt.Println("WEBHOOK_URL loaded successfully:", webhookURL)
+		logger.Info("WEBHOOK_URL loaded successfully", "main")
 	}
 
 	cfg := config.Load()
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		logger.Fatal("Configuration validation failed", "main", err)
+	}
 
 	// Initialize AI manager
 	aiManager, err := ai.NewManager(cfg)

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type OpenRouterClient struct {
@@ -43,7 +44,9 @@ type OpenRouterResponse struct {
 
 func NewOpenRouterClient(apiKey string) *OpenRouterClient {
 	return &OpenRouterClient{
-		client: &http.Client{},
+		client: &http.Client{
+			Timeout: 60 * time.Second, // Add 60 second timeout
+		},
 		apiKey: apiKey,
 	}
 }
@@ -84,7 +87,7 @@ func (oc *OpenRouterClient) GenerateContent(ctx context.Context, prompt string, 
 
 	req.Header.Set("Authorization", "Bearer "+oc.apiKey)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("HTTP-Referer", "https://github.com/your-repo")
+	req.Header.Set("HTTP-Referer", "https://github.com/Nokijoto/Gladis")
 	req.Header.Set("X-Title", "Gladis Discord Bot")
 
 	resp, err := oc.client.Do(req)
@@ -103,7 +106,7 @@ func (oc *OpenRouterClient) GenerateContent(ctx context.Context, prompt string, 
 		return "", fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// Poprawka. Używamy pola z wielkiej litery zgodnego ze strukturą
+	// Check if we received any choices in the response
 	if len(response.Choices) == 0 {
 		return "", fmt.Errorf("no response generated")
 	}
