@@ -46,7 +46,7 @@ func main() {
 	defer aiManager.Close()
 
 	// Create and start the bot
-	bot, err := discord.NewBot(cfg.DiscordToken, aiManager)
+	bot, err := discord.NewBot(cfg.DiscordToken, aiManager, cfg.GiphyAPIKey)
 	if err != nil {
 		logger.Fatal("Failed to create bot", "main", err)
 	}

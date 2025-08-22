@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/google/generative-ai-go v0.17.0
+	github.com/joho/godotenv v1.5.1
 	google.golang.org/api v0.190.0
 )
 
@@ -24,7 +25,6 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
