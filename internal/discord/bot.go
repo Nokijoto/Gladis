@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand" // Added for random chance
 	"net/http"
 	"strings"
 	"time"
@@ -40,6 +41,8 @@ func NewBot(token string, aiManager *ai.Manager) (*Bot, error) {
 		contextLength: 0,
 	}
 
+	rand.Seed(time.Now().UnixNano()) // Initialize random seed
+
 	bot.setupHandlers()
 	return bot, nil
 }
@@ -60,6 +63,18 @@ func (b *Bot) readyHandler(s *discordgo.Session, event *discordgo.Ready) {
 
 func (b *Bot) messageCreateHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	if strings.Contains(strings.ToLower(m.Content), ":kekw:") {
+		if rand.Intn(100) < 25 { // 25% chance
+			s.ChannelMessageSend(m.ChannelID, ":kekw:")
+			return
+		}
+	}
+
+	if strings.Contains(strings.ToLower(m.Content), "gm") {
+		s.ChannelMessageSend(m.ChannelID, "GM")
 		return
 	}
 
