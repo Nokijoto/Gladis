@@ -52,6 +52,38 @@ These instructions will get you a copy of the project up and running on your loc
    ```
    The bot should now be running and connected to your Discord server.
 
+## Testing
+
+The project includes comprehensive unit tests for core functionality:
+
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with verbose output
+go test -v ./...
+
+# Run tests for a specific package
+go test -v ./internal/config
+```
+
+## Development
+
+### Code Quality
+
+The project uses standard Go tools for code quality:
+
+```bash
+# Format code
+go fmt ./...
+
+# Static analysis
+go vet ./...
+
+# Build the project
+go build ./...
+```
+
 ## Project Structure
 
 ```

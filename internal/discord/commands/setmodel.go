@@ -181,7 +181,7 @@ func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, aiM
 			// Handle model selection from the dropdown
 			if len(i.MessageComponentData().Values) > 0 {
 				selectedModelName := i.MessageComponentData().Values[0]
-				
+
 				// Validate selected model name
 				if selectedModelName == "" {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -193,7 +193,7 @@ func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, aiM
 					})
 					return
 				}
-				
+
 				currentModel := aiManager.GetCurrentModel()
 
 				if selectedModelName != currentModel.Name {

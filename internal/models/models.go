@@ -27,7 +27,7 @@ var allModels = []ModelInfo{
 	{Name: "gemini-2.5-pro", Provider: ProviderGemini},
 	{Name: "gemini-2.5-flash", Provider: ProviderGemini},
 	{Name: "gemini-2.5-flash-lite", Provider: ProviderGemini},
-	
+
 	// OpenRouter models
 	{Name: "google/gemini-2.5-pro-exp-03-25", Provider: ProviderOpenRouter},
 	{Name: "google/gemini-2.0-flash-exp:free", Provider: ProviderOpenRouter},
@@ -93,15 +93,15 @@ func GetAllModels() []ModelInfo {
 func GetModelsPage(page int) []ModelInfo {
 	startIndex := page * MODELS_PER_PAGE
 	endIndex := startIndex + MODELS_PER_PAGE
-	
+
 	if startIndex >= len(allModels) {
 		return []ModelInfo{}
 	}
-	
+
 	if endIndex > len(allModels) {
 		endIndex = len(allModels)
 	}
-	
+
 	return allModels[startIndex:endIndex]
 }
 

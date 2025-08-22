@@ -37,10 +37,10 @@ func (c *Config) Validate() error {
 	if c.DiscordToken == "" {
 		return fmt.Errorf("DISCORD_TOKEN is required")
 	}
-	
+
 	if c.GeminiAPIKey == "" && c.OpenRouterAPIKey == "" {
 		return fmt.Errorf("at least one AI API key (GEMINI_API_KEY or OPENROUTER_API_KEY) is required")
 	}
-	
+
 	return nil
 }

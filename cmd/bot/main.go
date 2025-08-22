@@ -36,7 +36,7 @@ func main() {
 	}
 
 	cfg := config.Load()
-	
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		logger.Fatal("Configuration validation failed", "main", err)

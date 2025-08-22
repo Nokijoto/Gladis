@@ -7,7 +7,7 @@ import (
 
 func TestConfigValidation(t *testing.T) {
 	tests := []struct {
-		name        string
+		name             string
 		discordToken     string
 		geminiAPIKey     string
 		openRouterAPIKey string
@@ -33,9 +33,9 @@ func TestConfigValidation(t *testing.T) {
 			expectError:      false,
 		},
 		{
-			name:        "Missing Discord token",
+			name:         "Missing Discord token",
 			geminiAPIKey: "test-gemini-key",
-			expectError: true,
+			expectError:  true,
 		},
 		{
 			name:         "Missing AI API keys",
@@ -71,7 +71,7 @@ func TestConfigLoad(t *testing.T) {
 	// Save original env vars
 	originalDiscordToken := os.Getenv("DISCORD_TOKEN")
 	originalGeminiKey := os.Getenv("GEMINI_API_KEY")
-	
+
 	// Clean up after test
 	defer func() {
 		os.Setenv("DISCORD_TOKEN", originalDiscordToken)

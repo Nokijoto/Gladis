@@ -6,7 +6,7 @@ import (
 
 func TestGetAllModels(t *testing.T) {
 	models := GetAllModels()
-	
+
 	if len(models) == 0 {
 		t.Error("Expected at least one model, got none")
 	}
