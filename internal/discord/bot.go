@@ -66,7 +66,7 @@ func (b *Bot) messageCreateHandler(s *discordgo.Session, m *discordgo.MessageCre
 		return
 	}
 
-	if strings.Contains(strings.ToLower(m.Content), ":kekw:") {
+	if strings.Contains(strings.ToLower(m.Content), "<:kekew:1110258853838331914>") {
 		if rand.Intn(100) < 25 { // 25% chance
 			s.ChannelMessageSend(m.ChannelID, "<:kekew:1110258853838331914>")
 			return
