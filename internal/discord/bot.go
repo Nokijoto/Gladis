@@ -2,10 +2,12 @@ package discord
 
 import (
 	"context"
+	"encoding/json" // Added for JSON parsing
 	"fmt"
 	"io"
 	"math/rand" // Added for random chance
 	"net/http"
+	"net/url" // Added for URL encoding
 	"strings"
 	"time"
 
@@ -22,10 +24,11 @@ type Bot struct {
 	aiManager     *ai.Manager
 	systemPrompt  string // Added systemPrompt field
 	contextLength int    // Added contextLength field
+	giphyAPIKey   string // Added giphyAPIKey field
 	// commandHandler *CommandHandler // Removed as CommandHandler is no longer a single struct
 }
 
-func NewBot(token string, aiManager *ai.Manager) (*Bot, error) {
+func NewBot(token string, aiManager *ai.Manager, giphyAPIKey string) (*Bot, error) {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		// Use logger.Error for non-fatal errors during initialization
@@ -34,11 +37,11 @@ func NewBot(token string, aiManager *ai.Manager) (*Bot, error) {
 	}
 
 	bot := &Bot{
-		session:   session,
-		aiManager: aiManager,
-		// Initialize systemPrompt and contextLength here if they have default values
+		session:       session,
+		aiManager:     aiManager,
 		systemPrompt:  "",
 		contextLength: 0,
+		giphyAPIKey:   giphyAPIKey, // Initialize giphyAPIKey
 	}
 
 	rand.Seed(time.Now().UnixNano()) // Initialize random seed
@@ -66,15 +69,32 @@ func (b *Bot) messageCreateHandler(s *discordgo.Session, m *discordgo.MessageCre
 		return
 	}
 
-	if strings.Contains(strings.ToLower(m.Content), "<:kekew:1110258853838331914>") {
+	if strings.Contains(strings.ToLower(m.Content), ":kekew:") {
 		if rand.Intn(100) < 25 { // 25% chance
 			s.ChannelMessageSend(m.ChannelID, "<:kekew:1110258853838331914>")
 			return
 		}
 	}
 
+	if strings.Contains(strings.ToLower(m.Content), ":goodgood:") {
+		if rand.Intn(100) < 25 { // 25% chance
+			s.ChannelMessageSend(m.ChannelID, "<:goodgood:1405480381918089307>")
+			return
+		}
+	}
+
 	if strings.Contains(strings.ToLower(m.Content), "gm") {
-		s.ChannelMessageSend(m.ChannelID, "GM")
+		if rand.Intn(10) == 0 { // 10% chance for "GM"
+			s.ChannelMessageSend(m.ChannelID, "GM")
+		} else { // 90% chance for a random GIF
+			gifURL, err := b.getRandomGiphyGif("good morning")
+			if err != nil {
+				logger.Error("Failed to get Giphy GIF", "messageCreateHandler", err)
+				s.ChannelMessageSend(m.ChannelID, "GM (failed to fetch GIF)")
+			} else {
+				s.ChannelMessageSend(m.ChannelID, gifURL)
+			}
+		}
 		return
 	}
 
@@ -264,3 +284,43 @@ func (b *Bot) RegisterCommands() error {
 // and all methods associated with CommandHandler (HandlePing, HandleSetContext, HandleInfo,
 // HandleSetSystemPrompt, HandleHelp, HandleSetModel, sendModelSelect, HandleComponent).
 // These have been moved to their respective command files.
+
+func (b *Bot) getRandomGiphyGif(query string) (string, error) {
+	if b.giphyAPIKey == "" {
+		return "", fmt.Errorf("Giphy API key is not set")
+	}
+
+	encodedQuery := url.QueryEscape(query)
+	apiURL := fmt.Sprintf("https://api.giphy.com/v1/gifs/search?api_key=%s&q=%s&limit=50", b.giphyAPIKey, encodedQuery)
+
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to make Giphy API request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Giphy API returned non-OK status: %d", resp.StatusCode)
+	}
+
+	var giphyResponse struct {
+		Data []struct {
+			Images struct {
+				Original struct {
+					URL string `json:"url"`
+				} `json:"original"`
+			} `json:"images"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&giphyResponse); err != nil {
+		return "", fmt.Errorf("failed to decode Giphy API response: %w", err)
+	}
+
+	if len(giphyResponse.Data) == 0 {
+		return "", fmt.Errorf("no GIFs found for query: %s", query)
+	}
+
+	randomIndex := rand.Intn(len(giphyResponse.Data))
+	return giphyResponse.Data[randomIndex].Images.Original.URL, nil
+}
