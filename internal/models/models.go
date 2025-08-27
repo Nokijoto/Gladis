@@ -10,6 +10,7 @@ type AIProvider string
 const (
 	ProviderGemini     AIProvider = "gemini"
 	ProviderOpenRouter AIProvider = "openrouter"
+	ProviderGorq       AIProvider = "Groqqq"
 )
 
 type ModelInfo struct {

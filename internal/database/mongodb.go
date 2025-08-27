@@ -13,22 +13,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// Brakująca definicja typu
-// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+// Klient Mongo i uchwyty do DB oraz kolekcji
 type MongoDB struct {
 	Client *mongo.Client
 	DB     *mongo.Database
 	Models *mongo.Collection
 }
 
+// Minimalny model zapisany w DB
 type ModelInfo struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Name     string             `bson:"name" json:"name"`
 	Provider string             `bson:"provider" json:"provider"`
 }
 
-// InitMongoDB tworzy klienta i wybiera bazę oraz kolekcję models
+// InitMongoDB tworzy klienta oraz wybiera bazę i kolekcję models
 func InitMongoDB(mongoURI string, dbName string) (*MongoDB, error) {
 	if mongoURI == "" {
 		return nil, errors.New("empty mongo uri")
@@ -76,7 +75,7 @@ func (db *MongoDB) ensureIndexes() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Indeks złożony po name i provider z unikalnością
+	// Unikalność w parze name i provider
 	compound := mongo.IndexModel{
 		Keys: bson.D{{Key: "name", Value: 1}, {Key: "provider", Value: 1}},
 		Options: options.Index().
@@ -84,7 +83,7 @@ func (db *MongoDB) ensureIndexes() error {
 			SetName("uniq_name_provider").
 			SetUnique(true),
 	}
-	// Dodatkowy prosty po name dla sortowania
+	// Dodatkowy indeks po name do sortowań
 	byName := mongo.IndexModel{
 		Keys: bson.D{{Key: "name", Value: 1}},
 		Options: options.Index().
@@ -114,7 +113,7 @@ func (db *MongoDB) Close() {
 	}
 }
 
-// Ręczny seed
+// Ręczny seed modeli
 func (db *MongoDB) InsertModels(models []ModelInfo) error {
 	if db == nil || db.Models == nil {
 		return errors.New("db not initialized")
@@ -139,6 +138,7 @@ func (db *MongoDB) InsertModels(models []ModelInfo) error {
 	return nil
 }
 
+// Pojedynczy model po ObjectID
 func (db *MongoDB) GetModelByID(idHex string) (*ModelInfo, error) {
 	if db == nil || db.Models == nil {
 		return nil, fmt.Errorf("db not initialized")
@@ -168,7 +168,7 @@ func (db *MongoDB) GetModelByID(idHex string) (*ModelInfo, error) {
 	return &out, nil
 }
 
-// Jedna strona wyników
+// Jedna strona modeli z sortowaniem po name oraz _id
 func (db *MongoDB) GetModels(page, limit int64) ([]ModelInfo, error) {
 	if db == nil || db.Models == nil {
 		return nil, fmt.Errorf("db not initialized")
@@ -209,7 +209,8 @@ func (db *MongoDB) GetModels(page, limit int64) ([]ModelInfo, error) {
 	return out, cur.Err()
 }
 
-// GetUniqueProviders zwraca listę unikalnych nazw dostawców z kolekcji models.
+// Unikalni providerzy z normalizacją
+// Źródło to provider albo name gdy provider brak
 func (db *MongoDB) GetUniqueProviders() ([]string, error) {
 	if db == nil || db.Models == nil {
 		return nil, fmt.Errorf("db not initialized")
@@ -218,36 +219,49 @@ func (db *MongoDB) GetUniqueProviders() ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Użyj agregacji do pobrania unikalnych wartości pola "provider"
-	pipeline := []bson.M{
-		{"$group": bson.M{"_id": "$provider"}},
-		{"$sort": bson.M{"_id": 1}}, // Sortuj alfabetycznie
+	pipeline := mongo.Pipeline{
+		// prov = toLower(trim(ifNull(provider, name)))
+		bson.D{{Key: "$project", Value: bson.M{
+			"prov": bson.M{
+				"$toLower": bson.M{
+					"$trim": bson.M{
+						"input": bson.M{
+							"$ifNull": bson.A{"$provider", "$name"},
+						},
+					},
+				},
+			},
+		}}},
+		bson.D{{Key: "$match", Value: bson.M{"prov": bson.M{"$ne": ""}}}},
+		bson.D{{Key: "$group", Value: bson.M{"_id": "$prov"}}},
+		bson.D{{Key: "$sort", Value: bson.M{"_id": 1}}},
 	}
 
-	cursor, err := db.Models.Aggregate(ctx, pipeline)
+	cur, err := db.Models.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, fmt.Errorf("failed to aggregate providers: %w", err)
 	}
-	defer cursor.Close(ctx)
+	defer cur.Close(ctx)
 
-	var providers []string
-	for cursor.Next(ctx) {
-		var result struct {
+	out := make([]string, 0, 8)
+	for cur.Next(ctx) {
+		var row struct {
 			ID string `bson:"_id"`
 		}
-		if err := cursor.Decode(&result); err != nil {
+		if err := cur.Decode(&row); err != nil {
 			return nil, fmt.Errorf("failed to decode provider: %w", err)
 		}
-		providers = append(providers, result.ID)
+		if row.ID != "" {
+			out = append(out, row.ID)
+		}
 	}
-
-	if err := cursor.Err(); err != nil {
-		return nil, fmt.Errorf("cursor error during provider aggregation: %w", err)
+	if err := cur.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error: %w", err)
 	}
-
-	return providers, nil
+	return out, nil
 }
 
+// Pojedynczy model po nazwie
 func (db *MongoDB) GetModelByName(name string) (*ModelInfo, error) {
 	if db == nil || db.Models == nil {
 		return nil, fmt.Errorf("db not initialized")
@@ -259,7 +273,6 @@ func (db *MongoDB) GetModelByName(name string) (*ModelInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// jeśli masz wiele rekordów o tej samej nazwie, można dodać sort po provider lub _id
 	opts := options.FindOne().
 		SetProjection(bson.M{"_id": 1, "name": 1, "provider": 1})
 

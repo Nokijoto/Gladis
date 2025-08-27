@@ -27,6 +27,7 @@ type Bot struct {
 	systemPrompt  string            // Added systemPrompt field
 	contextLength int               // Added contextLength field
 	giphyAPIKey   string            // Added giphyAPIKey field
+	gmCounts      map[string]int    // Track consecutive "gm" messages per channel
 	// commandHandler *CommandHandler // Removed as CommandHandler is no longer a single struct
 }
 
@@ -44,7 +45,8 @@ func NewBot(token string, aiManager *ai.Manager, mongoDB *database.MongoDB, giph
 		mongoDB:       mongoDB, // Initialize mongoDB
 		systemPrompt:  "",
 		contextLength: 0,
-		giphyAPIKey:   giphyAPIKey, // Initialize giphyAPIKey
+		giphyAPIKey:   giphyAPIKey,          // Initialize giphyAPIKey
+		gmCounts:      make(map[string]int), // Initialize gmCounts map
 	}
 
 	rand.Seed(time.Now().UnixNano()) // Initialize random seed
@@ -87,18 +89,24 @@ func (b *Bot) messageCreateHandler(s *discordgo.Session, m *discordgo.MessageCre
 	}
 
 	if strings.Contains(strings.ToLower(m.Content), "gm") {
-		if rand.Intn(10) == 0 { // 10% chance for "GM"
-			s.ChannelMessageSend(m.ChannelID, "GM")
-		} else { // 90% chance for a random GIF
-			gifURL, err := b.getRandomGiphyGif("good morning")
-			if err != nil {
-				logger.Error("Failed to get Giphy GIF", "messageCreateHandler", err)
-				s.ChannelMessageSend(m.ChannelID, "GM (failed to fetch GIF)")
-			} else {
-				s.ChannelMessageSend(m.ChannelID, gifURL)
+		b.gmCounts[m.ChannelID]++
+		if b.gmCounts[m.ChannelID] >= 3 {
+			if rand.Intn(10) == 0 { // 10% chance for "GM"
+				s.ChannelMessageSend(m.ChannelID, "GM")
+			} else { // 90% chance for a random GIF
+				gifURL, err := b.getRandomGiphyGif("good morning")
+				if err != nil {
+					logger.Error("Failed to get Giphy GIF", "messageCreateHandler", err)
+					s.ChannelMessageSend(m.ChannelID, "GM (failed to fetch GIF)")
+				} else {
+					s.ChannelMessageSend(m.ChannelID, gifURL)
+				}
 			}
+			b.gmCounts[m.ChannelID] = 0 // Reset count after responding
 		}
 		return
+	} else {
+		b.gmCounts[m.ChannelID] = 0 // Reset count if message does not contain "gm"
 	}
 
 	if !strings.Contains(m.Content, fmt.Sprintf("<@%s>", s.State.User.ID)) {
@@ -277,6 +285,7 @@ func (b *Bot) RegisterCommands() error {
 	allCommands = append(allCommands, commands.InfoCommand)
 	allCommands = append(allCommands, commands.SetSystemPromptCommand)
 	allCommands = append(allCommands, commands.SetContextCommand)
+	allCommands = append(allCommands, commands.AvailableProvidersCommand)
 
 	_, err := b.session.ApplicationCommandBulkOverwrite(b.session.State.User.ID, "", allCommands)
 	return err
