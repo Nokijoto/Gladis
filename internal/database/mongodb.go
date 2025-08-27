@@ -208,6 +208,46 @@ func (db *MongoDB) GetModels(page, limit int64) ([]ModelInfo, error) {
 	}
 	return out, cur.Err()
 }
+
+// GetUniqueProviders zwraca listę unikalnych nazw dostawców z kolekcji models.
+func (db *MongoDB) GetUniqueProviders() ([]string, error) {
+	if db == nil || db.Models == nil {
+		return nil, fmt.Errorf("db not initialized")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Użyj agregacji do pobrania unikalnych wartości pola "provider"
+	pipeline := []bson.M{
+		{"$group": bson.M{"_id": "$provider"}},
+		{"$sort": bson.M{"_id": 1}}, // Sortuj alfabetycznie
+	}
+
+	cursor, err := db.Models.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregate providers: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var providers []string
+	for cursor.Next(ctx) {
+		var result struct {
+			ID string `bson:"_id"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return nil, fmt.Errorf("failed to decode provider: %w", err)
+		}
+		providers = append(providers, result.ID)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error during provider aggregation: %w", err)
+	}
+
+	return providers, nil
+}
+
 func (db *MongoDB) GetModelByName(name string) (*ModelInfo, error) {
 	if db == nil || db.Models == nil {
 		return nil, fmt.Errorf("db not initialized")

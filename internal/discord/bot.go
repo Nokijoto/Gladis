@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"gladis/internal/ai"
-	"gladis/internal/logger" // Import the logger package
+	"gladis/internal/database" // Import the database package
+	"gladis/internal/logger"   // Import the logger package
 
 	"github.com/bwmarrin/discordgo"
 
@@ -22,13 +23,14 @@ import (
 type Bot struct {
 	session       *discordgo.Session
 	aiManager     *ai.Manager
-	systemPrompt  string // Added systemPrompt field
-	contextLength int    // Added contextLength field
-	giphyAPIKey   string // Added giphyAPIKey field
+	mongoDB       *database.MongoDB // Added mongoDB field
+	systemPrompt  string            // Added systemPrompt field
+	contextLength int               // Added contextLength field
+	giphyAPIKey   string            // Added giphyAPIKey field
 	// commandHandler *CommandHandler // Removed as CommandHandler is no longer a single struct
 }
 
-func NewBot(token string, aiManager *ai.Manager, giphyAPIKey string) (*Bot, error) {
+func NewBot(token string, aiManager *ai.Manager, mongoDB *database.MongoDB, giphyAPIKey string) (*Bot, error) {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		// Use logger.Error for non-fatal errors during initialization
@@ -39,6 +41,7 @@ func NewBot(token string, aiManager *ai.Manager, giphyAPIKey string) (*Bot, erro
 	bot := &Bot{
 		session:       session,
 		aiManager:     aiManager,
+		mongoDB:       mongoDB, // Initialize mongoDB
 		systemPrompt:  "",
 		contextLength: 0,
 		giphyAPIKey:   giphyAPIKey, // Initialize giphyAPIKey
@@ -252,6 +255,8 @@ func (b *Bot) handleApplicationCommand(s *discordgo.Session, i *discordgo.Intera
 		commands.HandleSetSystemPrompt(s, i, &b.systemPrompt) // Pass systemPrompt
 	case "setcontext":
 		commands.HandleSetContext(s, i, &b.contextLength) // Pass contextLength
+	case "availableproviders":
+		commands.AvailableProvidersHandler(s, i, b.mongoDB) // Pass mongoDB
 	}
 }
 

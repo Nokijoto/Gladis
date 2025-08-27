@@ -63,7 +63,7 @@ var SetModelCommand = func() *discordgo.ApplicationCommand {
 
 // HandleSetModel obsługuje komendę i pierwsze renderowanie
 func HandleSetModel(s *discordgo.Session, i *discordgo.InteractionCreate, aiManager *ai.Manager) {
-	fmt.Printf("[SetModel] %s\n", debugCtx("slash", aiManager, 0, ""))
+	// fmt.Printf("[SetModel] %s\n", debugCtx("slash", aiManager, 0, ""))
 
 	options := i.ApplicationCommandData().Options
 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
@@ -85,7 +85,7 @@ func HandleSetModel(s *discordgo.Session, i *discordgo.InteractionCreate, aiMana
 // sendModelSelect renderuje dropdown i przyciski paginacji.
 // update true oznacza edycję istniejącej wiadomości.
 func sendModelSelect(s *discordgo.Session, i *discordgo.InteractionCreate, page int, aiManager *ai.Manager, update bool) {
-	fmt.Printf("[sendModelSelect] %s\n", debugCtx("render", aiManager, page, fmt.Sprintf("update=%t", update)))
+	// fmt.Printf("[sendModelSelect] %s\n", debugCtx("render", aiManager, page, fmt.Sprintf("update=%t", update)))
 
 	// 1. Szybkie ACK żeby nie złapać 10062
 	if update {
@@ -212,7 +212,7 @@ func sendModelSelect(s *discordgo.Session, i *discordgo.InteractionCreate, page 
 		Components: &components,
 	}
 	if _, err := s.InteractionResponseEdit(i.Interaction, edit); err != nil {
-		fmt.Printf("[sendModelSelect] edit error: %v ctx=%s\n", err, debugCtx("edit-err", aiManager, page, ""))
+		// fmt.Printf("[sendModelSelect] edit error: %v ctx=%s\n", err, debugCtx("edit-err", aiManager, page, ""))
 	}
 }
 
@@ -240,7 +240,7 @@ func strPtr(s string) *string { return &s }
 
 // HandleInteraction obsługuje kliknięcia przycisków i wybór w dropdownie
 func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, aiManager *ai.Manager) {
-	fmt.Printf("[Interaction] %s\n", debugCtx("component", aiManager, 0, fmt.Sprintf("customID=%q", i.MessageComponentData().CustomID)))
+	// fmt.Printf("[Interaction] %s\n", debugCtx("component", aiManager, 0, fmt.Sprintf("customID=%q", i.MessageComponentData().CustomID)))
 
 	if i.Type != discordgo.InteractionMessageComponent {
 		return
