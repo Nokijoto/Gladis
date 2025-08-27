@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"gladis/internal/config"
+	"gladis/internal/database"
 	"gladis/internal/models"
 )
 
@@ -13,11 +14,12 @@ type Manager struct {
 	config       *config.Config
 	geminiClient *GeminiClient
 	openRouter   *OpenRouterClient
+	DB           *database.MongoDB
 	currentModel models.ModelInfo
 	mu           sync.RWMutex
 }
 
-func NewManager(cfg *config.Config) (*Manager, error) {
+func NewManager(cfg *config.Config, db *database.MongoDB) (*Manager, error) {
 	var geminiClient *GeminiClient
 	var err error
 
@@ -34,38 +36,39 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 	}
 
 	if geminiClient == nil && openRouterClient == nil {
-		return nil, fmt.Errorf("at least one API key (Gemini or OpenRouter) must be provided")
+		return nil, fmt.Errorf("at least one API key must be provided")
 	}
 
 	return &Manager{
 		config:       cfg,
 		geminiClient: geminiClient,
 		openRouter:   openRouterClient,
+		DB:           db, // KLUCZOWE, wcześniej brakowało
 		currentModel: models.ModelInfo{Name: "gemini-2.5-flash-lite", Provider: models.ProviderGemini},
 	}, nil
 }
 
-func (m *Manager) SetModel(modelName string) error {
+func (m *Manager) SetModelByID(idHex string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Use GetAllModels() which returns a single slice of all models.
-	availableModels := models.GetAllModels()
-	var selectedModel models.ModelInfo
-	found := false
-	for _, available := range availableModels {
-		if available.Name == modelName {
-			selectedModel = available
-			found = true
-			break
-		}
+	if m.DB == nil {
+		return fmt.Errorf("database handle is nil")
+	}
+	doc, err := m.DB.GetModelByID(idHex)
+	if err != nil {
+		return fmt.Errorf("failed to get model by id: %w", err)
+	}
+	if doc == nil {
+		return fmt.Errorf("model not found")
 	}
 
-	if !found {
-		return fmt.Errorf("model %s is not available", modelName)
+	selected := models.ModelInfo{
+		Name:     doc.Name,
+		Provider: models.AIProvider(doc.Provider),
 	}
 
-	switch selectedModel.Provider {
+	switch selected.Provider {
 	case models.ProviderGemini:
 		if m.geminiClient == nil {
 			return fmt.Errorf("Gemini API key not configured")
@@ -76,7 +79,7 @@ func (m *Manager) SetModel(modelName string) error {
 		}
 	}
 
-	m.currentModel = selectedModel
+	m.currentModel = selected
 	return nil
 }
 

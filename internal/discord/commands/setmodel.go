@@ -2,135 +2,195 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"sort"
-	"strconv" // Added import
-	"strings" // Added import
+	"strconv"
+	"strings"
+	"time"
 
 	"gladis/internal/ai"
-	"gladis/internal/models"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-var SetModelCommand = &discordgo.ApplicationCommand{
-	Name:        "setmodel",
-	Description: "Displays a list of available models to choose from.",
+// Pomocnicze: zwięzłe ID wskaźnika
+func dbgID(v any) string {
+	if v == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%p", v)
 }
 
-// HandleSetModel handles the /setmodel command and implements pagination.
+// Buduje łańcuch debug z kontekstem
+func debugCtx(where string, aiManager *ai.Manager, page int, extra string) string {
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("where=%s ", where))
+	sb.WriteString(fmt.Sprintf("ai=%s ", dbgID(aiManager)))
+	if aiManager != nil {
+		sb.WriteString(fmt.Sprintf("db=%s ", dbgID(aiManager.DB)))
+	}
+	if page > 0 {
+		sb.WriteString(fmt.Sprintf("page=%d ", page))
+	}
+	if extra != "" {
+		sb.WriteString(extra)
+	}
+	sb.WriteString(fmt.Sprintf(" ts=%s", time.Now().Format(time.RFC3339)))
+	return sb.String()
+}
+
+// Czy pokazać debug użytkownikowi
+func debugToUser() bool {
+	return os.Getenv("DEBUG_DB") == "1"
+}
+
+var SetModelCommand = func() *discordgo.ApplicationCommand {
+	min := 1.0
+	return &discordgo.ApplicationCommand{
+		Name:        "setmodel",
+		Description: "Displays a list of available models to choose from.",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "page",
+				Description: "Page number to display",
+				Required:    false,
+				MinValue:    &min,
+			},
+		},
+	}
+}()
+
+// HandleSetModel obsługuje komendę i pierwsze renderowanie
 func HandleSetModel(s *discordgo.Session, i *discordgo.InteractionCreate, aiManager *ai.Manager) {
+	fmt.Printf("[SetModel] %s\n", debugCtx("slash", aiManager, 0, ""))
+
 	options := i.ApplicationCommandData().Options
 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
 	for _, opt := range options {
 		optionMap[opt.Name] = opt
 	}
 
-	// Determine which page to display
 	page := 1
 	if opt, ok := optionMap["page"]; ok {
-		page = int(opt.IntValue()) // Parse page number from interaction
+		page = int(opt.IntValue())
+		if page < 1 {
+			page = 1
+		}
 	}
 
-	sendModelSelect(s, i, page, aiManager)
+	sendModelSelect(s, i, page, aiManager, false)
 }
 
-// sendModelSelect displays the model selection dropdown with pagination.
-func sendModelSelect(s *discordgo.Session, i *discordgo.InteractionCreate, page int, aiManager *ai.Manager) {
-	// Get all models and paginate
-	allModels := models.GetAllModels()
+// sendModelSelect renderuje dropdown i przyciski paginacji.
+// update true oznacza edycję istniejącej wiadomości.
+func sendModelSelect(s *discordgo.Session, i *discordgo.InteractionCreate, page int, aiManager *ai.Manager, update bool) {
+	fmt.Printf("[sendModelSelect] %s\n", debugCtx("render", aiManager, page, fmt.Sprintf("update=%t", update)))
 
-	// Calculate the start and end indices for the page
-	startIndex := (page - 1) * 25
-	endIndex := startIndex + 25
-	if endIndex > len(allModels) {
-		endIndex = len(allModels)
-	}
-
-	// Slice models to only show the selected page
-	modelsList := allModels[startIndex:endIndex]
-
-	// Handle empty model list
-	if len(modelsList) == 0 {
-		embed := &discordgo.MessageEmbed{
-			Title:       "❌ No Models Found",
-			Description: fmt.Sprintf("No models found for page %d.", page),
-			Color:       0xFF0000,
-		}
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
+	// 1. Szybkie ACK żeby nie złapać 10062
+	if update {
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredMessageUpdate,
+		})
+	} else {
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Embeds: []*discordgo.MessageEmbed{embed},
+				Flags: discordgo.MessageFlagsEphemeral,
 			},
 		})
+	}
+
+	// 2. Walidacje po ACK. Błędy pokażemy przez edit.
+	if aiManager == nil {
+		editErrorEmbed(s, i, "❌ Error", "AI Manager nie jest zainicjalizowany.", nil)
+		return
+	}
+	if aiManager.DB == nil {
+		editErrorEmbed(s, i, "❌ Error", "Połączenie z bazą danych nie jest dostępne.", nil)
 		return
 	}
 
-	// Sort models by name for consistent order
-	sort.Slice(modelsList, func(k, l int) bool {
-		return modelsList[k].Name < modelsList[l].Name
+	const pageSize = int64(10)
+
+	// 3. Pobierz stronę modeli z DB
+	rows, err := aiManager.DB.GetModels(int64(page), pageSize)
+	if err != nil {
+		if debugToUser() {
+			editErrorEmbed(s, i, "❌ Error", "Nie udało się pobrać listy modeli z bazy danych.",
+				[]*discordgo.MessageEmbedField{{Name: "Debug", Value: fmt.Sprintf("%v", err), Inline: false}})
+		} else {
+			editErrorEmbed(s, i, "❌ Error", "Nie udało się pobrać listy modeli z bazy danych.", nil)
+		}
+		return
+	}
+	if len(rows) == 0 {
+		editErrorEmbed(s, i, "❌ No Models Found", fmt.Sprintf("Brak modeli dla strony %d.", page), nil)
+		return
+	}
+
+	// 4. Stabilne sortowanie w obrębie strony
+	sort.Slice(rows, func(a, b int) bool {
+		if rows[a].Name == rows[b].Name {
+			return rows[a].ID.Hex() < rows[b].ID.Hex()
+		}
+		return rows[a].Name < rows[b].Name
 	})
 
-	// Create select options
+	// 5. Zbuduj komponenty UI
+	current := aiManager.GetCurrentModel()
+
 	var selectOptions []discordgo.SelectMenuOption
-	currentModel := aiManager.GetCurrentModel()
-	for _, model := range modelsList {
+	for _, m := range rows {
+		idHex := m.ID.Hex()
+		isDefault := m.Name == current.Name && m.Provider == string(current.Provider)
 		selectOptions = append(selectOptions, discordgo.SelectMenuOption{
-			Label:   fmt.Sprintf("%s (%s)", model.Name, model.Provider),
-			Value:   model.Name, // Use model.Name as the value
-			Default: model.Name == currentModel.Name,
+			Label:   fmt.Sprintf("%s (%s)", m.Name, m.Provider),
+			Value:   idHex, // unikalne ID
+			Default: isDefault,
 		})
 	}
 
-	// Create select menu
 	selectMenu := discordgo.SelectMenu{
 		CustomID:    "model_select",
 		Placeholder: "Choose a model...",
 		Options:     selectOptions,
 	}
+	rowSelect := discordgo.ActionsRow{Components: []discordgo.MessageComponent{selectMenu}}
 
-	// Wrap selectMenu in ActionsRow component (required by Discord)
-	actionsRow := discordgo.ActionsRow{
-		Components: []discordgo.MessageComponent{
-			selectMenu,
-		},
-	}
-
-	// Prepare response content
-	responseContent := fmt.Sprintf("Current model: `%s` (Provider: `%s`)\nPlease select a new model from the dropdown.", currentModel.Name, currentModel.Provider)
-
-	// Prepare pagination buttons
-	var components []discordgo.MessageComponent
+	var buttons []discordgo.MessageComponent
 	if page > 1 {
-		previousButton := discordgo.Button{
+		buttons = append(buttons, discordgo.Button{
 			Label:    "Previous Page",
-			CustomID: fmt.Sprintf("page-%d", page-1), // Set page number for previous
+			CustomID: fmt.Sprintf("page-%d", page-1),
 			Style:    discordgo.PrimaryButton,
-		}
-		components = append(components, discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{previousButton},
 		})
 	}
-
-	if endIndex < len(allModels) {
-		nextButton := discordgo.Button{
+	if len(rows) == int(pageSize) {
+		buttons = append(buttons, discordgo.Button{
 			Label:    "Next Page",
-			CustomID: fmt.Sprintf("page-%d", page+1), // Set page number for next
+			CustomID: fmt.Sprintf("page-%d", page+1),
 			Style:    discordgo.PrimaryButton,
-		}
-		components = append(components, discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{nextButton},
 		})
 	}
+	components := []discordgo.MessageComponent{rowSelect}
+	if len(buttons) > 0 {
+		components = append(components, discordgo.ActionsRow{Components: buttons})
+	}
 
-	// Create Embed for the model selection response
+	responseContent := fmt.Sprintf(
+		"Current model: `%s` Provider: `%s`\nWybierz nowy model z listy poniżej.",
+		current.Name, current.Provider,
+	)
+
 	embed := &discordgo.MessageEmbed{
 		Title:       "📚 Available Models",
-		Description: "Select a model from the dropdown below:",
-		Color:       0x00FF00, // Green for success
+		Description: fmt.Sprintf("Strona %d. Wybierz model z rozwijanej listy.", page),
+		Color:       0x00FF00,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "**Current Model**",
-				Value:  fmt.Sprintf("`%s` (Provider: `%s`)", currentModel.Name, currentModel.Provider),
+				Value:  fmt.Sprintf("`%s` Provider: `%s`", current.Name, current.Provider),
 				Inline: false,
 			},
 		},
@@ -138,90 +198,97 @@ func sendModelSelect(s *discordgo.Session, i *discordgo.InteractionCreate, page 
 			Text: "Model selection",
 		},
 	}
+	if debugToUser() {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:  "Debug",
+			Value: debugCtx("ok", aiManager, page, fmt.Sprintf("pageSize=%d listLen=%d", pageSize, len(rows))),
+		})
+	}
 
-	// Respond to the interaction with the Embed, select menu, and pagination buttons
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content:    responseContent,
-			Flags:      discordgo.MessageFlagsEphemeral,
-			Embeds:     []*discordgo.MessageEmbed{embed},
-			Components: append([]discordgo.MessageComponent{actionsRow}, components...),
-		},
-	})
-
-	if err != nil {
-		fmt.Println("Error responding to interaction:", err)
+	// 6. Edytujemy odpowiedź po ACK
+	edit := &discordgo.WebhookEdit{
+		Content:    strPtr(responseContent),
+		Embeds:     &[]*discordgo.MessageEmbed{embed},
+		Components: &components,
+	}
+	if _, err := s.InteractionResponseEdit(i.Interaction, edit); err != nil {
+		fmt.Printf("[sendModelSelect] edit error: %v ctx=%s\n", err, debugCtx("edit-err", aiManager, page, ""))
 	}
 }
 
-// HandleInteraction handles message component interactions (e.g., button clicks, select menus).
+// proste helpery
+
+func editErrorEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, title, desc string, extra []*discordgo.MessageEmbedField) {
+	emb := &discordgo.MessageEmbed{
+		Title:       title,
+		Description: desc,
+		Color:       0xFF0000,
+	}
+	if extra != nil {
+		emb.Fields = append(emb.Fields, extra...)
+	}
+	emptyComponents := []discordgo.MessageComponent{}
+	edit := &discordgo.WebhookEdit{
+		Content:    strPtr(""),
+		Embeds:     &[]*discordgo.MessageEmbed{emb},
+		Components: &emptyComponents,
+	}
+	_, _ = s.InteractionResponseEdit(i.Interaction, edit)
+}
+
+func strPtr(s string) *string { return &s }
+
+// HandleInteraction obsługuje kliknięcia przycisków i wybór w dropdownie
 func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, aiManager *ai.Manager) {
-	if i.Type == discordgo.InteractionMessageComponent { // Corrected check for message component interaction
-		customID := i.MessageComponentData().CustomID
+	fmt.Printf("[Interaction] %s\n", debugCtx("component", aiManager, 0, fmt.Sprintf("customID=%q", i.MessageComponentData().CustomID)))
 
-		if strings.HasPrefix(customID, "page-") {
-			// Handle pagination button click
-			pageStr := customID[len("page-"):]
-			page, err := strconv.Atoi(pageStr)
-			if err != nil {
-				fmt.Println("Error parsing page number from custom ID:", err)
-				// Respond with an error message to the user
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Invalid page number.",
-						Flags:   discordgo.MessageFlagsEphemeral,
-					},
-				})
-				return
-			}
-			sendModelSelect(s, i, page, aiManager)
-		} else if customID == "model_select" {
-			// Handle model selection from the dropdown
-			if len(i.MessageComponentData().Values) > 0 {
-				selectedModelName := i.MessageComponentData().Values[0]
-				currentModel := aiManager.GetCurrentModel()
+	if i.Type != discordgo.InteractionMessageComponent {
+		return
+	}
 
-				if selectedModelName != currentModel.Name {
-					allModels := models.GetAllModels()
-					var newModel *models.ModelInfo // Corrected to models.ModelInfo
-					for _, m := range allModels {
-						if m.Name == selectedModelName {
-							newModel = &m
-							break
-						}
-					}
+	customID := i.MessageComponentData().CustomID
 
-					if newModel != nil {
-						aiManager.SetModel(newModel.Name) // Corrected to pass model name string
-						responseContent := fmt.Sprintf("Model updated to: `%s` (Provider: `%s`)", newModel.Name, newModel.Provider)
-						s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-							Type: discordgo.InteractionResponseChannelMessageWithSource,
-							Data: &discordgo.InteractionResponseData{
-								Content: responseContent,
-								Flags:   discordgo.MessageFlagsEphemeral,
-							},
-						})
-					} else {
-						s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-							Type: discordgo.InteractionResponseChannelMessageWithSource,
-							Data: &discordgo.InteractionResponseData{
-								Content: "Error: Selected model not found.",
-								Flags:   discordgo.MessageFlagsEphemeral,
-							},
-						})
-					}
-				} else {
-					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-						Type: discordgo.InteractionResponseChannelMessageWithSource,
-						Data: &discordgo.InteractionResponseData{
-							Content: "You have already selected this model.",
-							Flags:   discordgo.MessageFlagsEphemeral,
-						},
-					})
-				}
-			}
+	// Paginacja
+	if strings.HasPrefix(customID, "page-") {
+		pageStr := customID[len("page-"):]
+		page, err := strconv.Atoi(pageStr)
+		if err != nil || page < 1 {
+			// szybki ACK i mały błąd
+			_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseDeferredMessageUpdate,
+			})
+			editErrorEmbed(s, i, "❌ Error", "Invalid page number.", nil)
+			return
 		}
+		sendModelSelect(s, i, page, aiManager, true)
+		return
+	}
+
+	// Wybór modelu po ID z Mongo
+	if customID == "model_select" {
+		values := i.MessageComponentData().Values
+		if len(values) == 0 {
+			return
+		}
+		idHex := values[0]
+
+		// ACK komponentu
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredMessageUpdate,
+		})
+
+		if aiManager == nil {
+			editErrorEmbed(s, i, "❌ Error", "AI Manager nie jest zainicjalizowany.", nil)
+			return
+		}
+
+		if err := aiManager.SetModelByID(idHex); err != nil {
+			editErrorEmbed(s, i, "❌ Error", fmt.Sprintf("Error: %v", err), nil)
+			return
+		}
+
+		// Po ustawieniu modelu odświeżamy widok na pierwszą stronę
+		sendModelSelect(s, i, 1, aiManager, true)
+		return
 	}
 }
