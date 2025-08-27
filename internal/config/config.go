@@ -11,6 +11,8 @@ type Config struct {
 	StartupGuildID   string
 	WebhookURL       string // Added WebhookURL
 	GiphyAPIKey      string // Added GiphyAPIKey
+	MongoURI         string
+	MongoDBName      string
 }
 
 func Load() *Config {
@@ -21,6 +23,8 @@ func Load() *Config {
 		Environment:      os.Getenv("ENVIRONMENT"),
 		WebhookURL:       os.Getenv("WEBHOOK_URL"),   // Added retrieval for WEBHOOK_URL
 		GiphyAPIKey:      os.Getenv("GIPHY_API_KEY"), // Added retrieval for GIPHY_API_KEY
+		MongoURI:         os.Getenv("MONGO_URI"),
+		MongoDBName:      os.Getenv("MONGO_DB"),
 		StartupChannelID: "361961924059070466",
 		StartupGuildID:   "361961924059070464",
 	}

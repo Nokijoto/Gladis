@@ -13,4 +13,5 @@ var Commands = []*discordgo.ApplicationCommand{
 	InfoCommand,
 	SetSystemPromptCommand,
 	SetContextCommand,
+	AvailableProvidersCommand,
 }

@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"gladis/internal/ai"
-	"gladis/internal/logger" // Import the logger package
+	"gladis/internal/database" // Import the database package
+	"gladis/internal/logger"   // Import the logger package
 
 	"github.com/bwmarrin/discordgo"
 
@@ -22,13 +23,15 @@ import (
 type Bot struct {
 	session       *discordgo.Session
 	aiManager     *ai.Manager
-	systemPrompt  string // Added systemPrompt field
-	contextLength int    // Added contextLength field
-	giphyAPIKey   string // Added giphyAPIKey field
+	mongoDB       *database.MongoDB // Added mongoDB field
+	systemPrompt  string            // Added systemPrompt field
+	contextLength int               // Added contextLength field
+	giphyAPIKey   string            // Added giphyAPIKey field
+	gmCounts      map[string]int    // Track consecutive "gm" messages per channel
 	// commandHandler *CommandHandler // Removed as CommandHandler is no longer a single struct
 }
 
-func NewBot(token string, aiManager *ai.Manager, giphyAPIKey string) (*Bot, error) {
+func NewBot(token string, aiManager *ai.Manager, mongoDB *database.MongoDB, giphyAPIKey string) (*Bot, error) {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		// Use logger.Error for non-fatal errors during initialization
@@ -39,9 +42,11 @@ func NewBot(token string, aiManager *ai.Manager, giphyAPIKey string) (*Bot, erro
 	bot := &Bot{
 		session:       session,
 		aiManager:     aiManager,
+		mongoDB:       mongoDB, // Initialize mongoDB
 		systemPrompt:  "",
 		contextLength: 0,
-		giphyAPIKey:   giphyAPIKey, // Initialize giphyAPIKey
+		giphyAPIKey:   giphyAPIKey,          // Initialize giphyAPIKey
+		gmCounts:      make(map[string]int), // Initialize gmCounts map
 	}
 
 	rand.Seed(time.Now().UnixNano()) // Initialize random seed
@@ -84,18 +89,24 @@ func (b *Bot) messageCreateHandler(s *discordgo.Session, m *discordgo.MessageCre
 	}
 
 	if strings.Contains(strings.ToLower(m.Content), "gm") {
-		if rand.Intn(10) == 0 { // 10% chance for "GM"
-			s.ChannelMessageSend(m.ChannelID, "GM")
-		} else { // 90% chance for a random GIF
-			gifURL, err := b.getRandomGiphyGif("good morning")
-			if err != nil {
-				logger.Error("Failed to get Giphy GIF", "messageCreateHandler", err)
-				s.ChannelMessageSend(m.ChannelID, "GM (failed to fetch GIF)")
-			} else {
-				s.ChannelMessageSend(m.ChannelID, gifURL)
+		b.gmCounts[m.ChannelID]++
+		if b.gmCounts[m.ChannelID] >= 3 {
+			if rand.Intn(10) == 0 { // 10% chance for "GM"
+				s.ChannelMessageSend(m.ChannelID, "GM")
+			} else { // 90% chance for a random GIF
+				gifURL, err := b.getRandomGiphyGif("good morning")
+				if err != nil {
+					logger.Error("Failed to get Giphy GIF", "messageCreateHandler", err)
+					s.ChannelMessageSend(m.ChannelID, "GM (failed to fetch GIF)")
+				} else {
+					s.ChannelMessageSend(m.ChannelID, gifURL)
+				}
 			}
+			b.gmCounts[m.ChannelID] = 0 // Reset count after responding
 		}
 		return
+	} else {
+		b.gmCounts[m.ChannelID] = 0 // Reset count if message does not contain "gm"
 	}
 
 	if !strings.Contains(m.Content, fmt.Sprintf("<@%s>", s.State.User.ID)) {
@@ -252,6 +263,8 @@ func (b *Bot) handleApplicationCommand(s *discordgo.Session, i *discordgo.Intera
 		commands.HandleSetSystemPrompt(s, i, &b.systemPrompt) // Pass systemPrompt
 	case "setcontext":
 		commands.HandleSetContext(s, i, &b.contextLength) // Pass contextLength
+	case "availableproviders":
+		commands.AvailableProvidersHandler(s, i, b.mongoDB) // Pass mongoDB
 	}
 }
 
@@ -272,6 +285,7 @@ func (b *Bot) RegisterCommands() error {
 	allCommands = append(allCommands, commands.InfoCommand)
 	allCommands = append(allCommands, commands.SetSystemPromptCommand)
 	allCommands = append(allCommands, commands.SetContextCommand)
+	allCommands = append(allCommands, commands.AvailableProvidersCommand)
 
 	_, err := b.session.ApplicationCommandBulkOverwrite(b.session.State.User.ID, "", allCommands)
 	return err
