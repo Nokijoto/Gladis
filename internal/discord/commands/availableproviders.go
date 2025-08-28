@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gladis/internal/database"
+	"log" // Dodano import log
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -29,6 +30,8 @@ func AvailableProvidersHandler(s *discordgo.Session, i *discordgo.InteractionCre
 		})
 		return
 	}
+
+	log.Printf("Pobrani dostawcy z bazy danych: %v", providers) // Dodano logowanie
 
 	if len(providers) == 0 {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

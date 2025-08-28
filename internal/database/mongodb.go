@@ -15,9 +15,10 @@ import (
 
 // Klient Mongo i uchwyty do DB oraz kolekcji
 type MongoDB struct {
-	Client *mongo.Client
-	DB     *mongo.Database
-	Models *mongo.Collection
+	Client    *mongo.Client
+	DB        *mongo.Database
+	Models    *mongo.Collection
+	Providers *mongo.Collection // Dodano nową kolekcję dla dostawców
 }
 
 // Minimalny model zapisany w DB
@@ -55,9 +56,10 @@ func InitMongoDB(mongoURI string, dbName string) (*MongoDB, error) {
 
 	db := client.Database(dbName)
 	m := &MongoDB{
-		Client: client,
-		DB:     db,
-		Models: db.Collection("models"),
+		Client:    client,
+		DB:        db,
+		Models:    db.Collection("models"),
+		Providers: db.Collection("providers"), // Inicjalizacja kolekcji providers
 	}
 
 	if err := m.ensureIndexes(); err != nil {
@@ -212,8 +214,8 @@ func (db *MongoDB) GetModels(page, limit int64) ([]ModelInfo, error) {
 // Unikalni providerzy z normalizacją
 // Źródło to provider albo name gdy provider brak
 func (db *MongoDB) GetUniqueProviders() ([]string, error) {
-	if db == nil || db.Models == nil {
-		return nil, fmt.Errorf("db not initialized")
+	if db == nil || db.Providers == nil { // Zmieniono na db.Providers
+		return nil, fmt.Errorf("db not initialized or providers collection is nil")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -232,12 +234,12 @@ func (db *MongoDB) GetUniqueProviders() ([]string, error) {
 				},
 			},
 		}}},
-		bson.D{{Key: "$match", Value: bson.M{"prov": bson.M{"$ne": ""}}}},
+		bson.D{{Key: "$match", Value: bson.M{"prov": bson.M{"$ne": ""}}}}, // Przywrócono etap $match
 		bson.D{{Key: "$group", Value: bson.M{"_id": "$prov"}}},
 		bson.D{{Key: "$sort", Value: bson.M{"_id": 1}}},
 	}
 
-	cur, err := db.Models.Aggregate(ctx, pipeline)
+	cur, err := db.Providers.Aggregate(ctx, pipeline) // Zmieniono na db.Providers
 	if err != nil {
 		return nil, fmt.Errorf("failed to aggregate providers: %w", err)
 	}

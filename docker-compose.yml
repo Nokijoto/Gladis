@@ -1,0 +1,15 @@
+services:
+  bot:
+    build: .
+    image: discord-gemini-bot
+    working_dir: /app
+    user: "10001:10001"
+    # jedna z opcji:
+
+    # A) wstrzyknięcie zmiennych z pliku:
+    env_file:
+      - ./.env
+
+    # B) zamiast tego możesz zamontować sam plik (aplikacja szuka /app/.env):
+    # volumes:
+    #   - ./.env:/app/.env:ro
