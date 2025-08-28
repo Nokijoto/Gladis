@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof" // Import for pprof
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,8 +18,19 @@ import (
 )
 
 func main() {
+	// Start pprof server in a goroutine
+	go func() {
+		logger.Info("Starting pprof server on :6060", "main")
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			logger.Error("Failed to start pprof server", "main", err)
+		}
+	}()
+
 	// Inicjalizacja loggera na samym początku
-	logger.InitLogger()
+	// Logger needs to be initialized after MongoDB connection is established
+	// to pass the db instance. For now, we'll initialize it with a nil db
+	// and re-initialize it after db connection.
+	logger.InitLogger(nil) // Temporary initialization
 
 	// Ładowanie .env
 	if err := godotenv.Load(); err != nil {
@@ -49,6 +62,9 @@ func main() {
 		logger.Fatal("Failed to connect to MongoDB", "main", err)
 	}
 	defer db.Close()
+
+	// Re-initialize logger with MongoDB instance
+	logger.InitLogger(db)
 
 	// Usunięto insert modeli przy starcie zgodnie z Twoją prośbą
 

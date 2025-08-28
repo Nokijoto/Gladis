@@ -1,16 +1,16 @@
 package logger
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
+	"fmt" // Keep fmt for console logging
+	"log" // Keep log for internal logger errors
 	"os"
 	"strings"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
+	"gladis/internal/database" // Import database package
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // LogLevel defines the severity of a log message.
@@ -24,33 +24,29 @@ const (
 	LevelFatal LogLevel = "FATAL"
 )
 
-// LogMessage represents the structure of a log entry.
+// LogMessage represents the structure of a log entry for MongoDB.
 type LogMessage struct {
-	Timestamp time.Time `json:"timestamp"`
-	Level     LogLevel  `json:"level"`
-	Message   string    `json:"message"`
-	Context   string    `json:"context,omitempty"` // e.g., file, function, or custom context
-	Error     string    `json:"error,omitempty"`   // For error logs
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
+	Level     LogLevel           `bson:"level" json:"level"`
+	Message   string             `bson:"message" json:"message"`
+	Context   string             `bson:"context,omitempty" json:"context,omitempty"` // e.g., file, function, or custom context
+	Error     string             `bson:"error,omitempty" json:"error,omitempty"`     // For error logs
 }
 
 var (
-	webhookURL string
-	logLevel   LogLevel = LevelInfo // Default log level
+	mongoDB  *database.MongoDB
+	logLevel LogLevel = LevelInfo // Default log level
 )
 
-// InitLogger initializes the logger with configuration.
-// It reads the webhook URL and log level from environment variables.
-func InitLogger() {
-	webhookURL = os.Getenv("WEBHOOK_URL")
+// InitLogger initializes the logger with a MongoDB instance and configuration.
+func InitLogger(db *database.MongoDB) {
+	mongoDB = db
 	levelStr := os.Getenv("LOG_LEVEL")
 	if levelStr != "" {
 		logLevel = LogLevel(strings.ToUpper(levelStr))
 	}
-	if webhookURL == "" {
-		log.Println("WEBHOOK_URL not set. Logs will not be sent to webhook.")
-	}
-	// Log the Webhook URL for verification purposes
-	fmt.Println("WEBHOOK_URL:", webhookURL)
+	log.Println("Logger initialized. Logs will be sent to MongoDB.")
 }
 
 // SetLevel sets the minimum log level to be logged.
@@ -80,9 +76,14 @@ func Log(level LogLevel, message string, context string) {
 	// Log to console
 	fmt.Printf("%s\n", logJSON)
 
-	// Send to webhook if URL is set and level is appropriate
-	if webhookURL != "" && (level == LevelError || level == LevelFatal || level == LevelWarn) {
-		go sendToWebhookAsEmbed(logEntry)
+	// Send to MongoDB asynchronously
+	if mongoDB != nil {
+		go func(entry LogMessage) {
+			entry.ID = primitive.NewObjectID() // Generate a new ObjectID for each log entry
+			if err := mongoDB.InsertLogEntry(entry); err != nil {
+				log.Printf("Failed to insert log entry into MongoDB: %v", err)
+			}
+		}(logEntry)
 	}
 }
 
@@ -131,72 +132,9 @@ func TryCatch(fn func() error, context string) error {
 	return nil
 }
 
-// sendToWebhookAsEmbed sends a log entry as an embed to the configured webhook URL.
-func sendToWebhookAsEmbed(logEntry LogMessage) {
-	// Create the embed to send to the webhook
-	embed := &discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("🔴 %s Log", logEntry.Level),
-		Description: logEntry.Message,
-		Color:       getLogColor(logEntry.Level),
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "**Context**",
-				Value:  logEntry.Context,
-				Inline: false,
-			},
-			{
-				Name:   "**Timestamp**",
-				Value:  logEntry.Timestamp.Format(time.RFC3339),
-				Inline: true,
-			},
-			{
-				Name:   "**Error (if any)**",
-				Value:  logEntry.Error,
-				Inline: false,
-			},
-		},
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Log sent at %s", logEntry.Timestamp.Format(time.RFC3339)),
-		},
-	}
-
-	// Send the embed to the webhook
-	reqBody := map[string]interface{}{
-		"embeds": []interface{}{embed},
-	}
-	reqJSON, err := json.Marshal(reqBody)
-	if err != nil {
-		log.Printf("Failed to marshal embed message: %v", err)
-		return
-	}
-
-	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(reqJSON))
-	if err != nil {
-		log.Printf("Failed to create webhook request: %v", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Timeout: 10 * time.Second, // Set a timeout for the request
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("Failed to send log to webhook: %v", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Log the response code
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		log.Printf("Webhook returned non-OK status: %s", resp.Status)
-	} else {
-		log.Printf("Webhook response status: %s", resp.Status)
-	}
-}
-
 // getLogColor returns a color code based on the log level.
+// This function is no longer needed as logs are sent to MongoDB, not Discord webhooks.
+/*
 func getLogColor(level LogLevel) int {
 	switch level {
 	case LevelDebug:
@@ -213,3 +151,4 @@ func getLogColor(level LogLevel) int {
 		return 0xFFFFFF // White for unknown levels
 	}
 }
+*/

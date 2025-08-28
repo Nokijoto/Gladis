@@ -19,6 +19,7 @@ type MongoDB struct {
 	DB        *mongo.Database
 	Models    *mongo.Collection
 	Providers *mongo.Collection // Dodano nową kolekcję dla dostawców
+	Logs      *mongo.Collection // Nowa kolekcja dla logów
 }
 
 // Minimalny model zapisany w DB
@@ -60,10 +61,15 @@ func InitMongoDB(mongoURI string, dbName string) (*MongoDB, error) {
 		DB:        db,
 		Models:    db.Collection("models"),
 		Providers: db.Collection("providers"), // Inicjalizacja kolekcji providers
+		Logs:      db.Collection("loggs"),     // Inicjalizacja kolekcji logów
 	}
 
 	if err := m.ensureIndexes(); err != nil {
 		log.Printf("warn ensureIndexes failed: %v", err)
+	}
+
+	if err := m.ensureLogIndexes(); err != nil {
+		log.Printf("warn ensureLogIndexes failed: %v", err)
 	}
 
 	log.Println("Connected to MongoDB and selected DB:", dbName)
@@ -98,6 +104,41 @@ func (db *MongoDB) ensureIndexes() error {
 	}
 	if _, err := db.Models.Indexes().CreateOne(ctx, byName); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (db *MongoDB) ensureLogIndexes() error {
+	if db == nil || db.Logs == nil {
+		return errors.New("nil db or logs collection")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Indeks dla timestamp w kolekcji logów
+	timestampIndex := mongo.IndexModel{
+		Keys:    bson.D{{Key: "timestamp", Value: 1}},
+		Options: options.Index().SetBackground(true).SetName("idx_timestamp"),
+	}
+
+	if _, err := db.Logs.Indexes().CreateOne(ctx, timestampIndex); err != nil {
+		return err
+	}
+	return nil
+}
+
+// InsertLogEntry inserts a log entry into the 'loggs' collection.
+func (db *MongoDB) InsertLogEntry(logEntry interface{}) error {
+	if db == nil || db.Logs == nil {
+		return errors.New("db not initialized or logs collection is nil")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := db.Logs.InsertOne(ctx, logEntry)
+	if err != nil {
+		return fmt.Errorf("failed to insert log entry: %w", err)
 	}
 	return nil
 }

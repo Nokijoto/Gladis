@@ -4,6 +4,8 @@ services:
     image: discord-gemini-bot
     working_dir: /app
     user: "10001:10001"
+    ports:
+      - "6060:6060" # Port for pprof
     # jedna z opcji:
 
     # A) wstrzyknięcie zmiennych z pliku:

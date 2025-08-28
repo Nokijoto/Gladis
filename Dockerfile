@@ -29,5 +29,6 @@ RUN adduser -D -u 10001 appuser
 # Kopiujemy binarkę
 COPY --from=builder /out/discord-gemini-bot /app/discord-gemini-bot
 
+EXPOSE 6060
 USER appuser
 ENTRYPOINT ["/app/discord-gemini-bot"]

@@ -1,0 +1,104 @@
+PeriodType: goroutine count
+Period: 1
+Time: 2025-08-28 09:26:24.820555335 +0200 CEST
+Samples:
+goroutine/count
+          6: 1 2 3 4 5 
+          3: 1 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
+          3: 1 26 27 
+          3: 1 26 28 
+          3: 1 26 29 
+          3: 1 26 30 31 32 
+          1: 33 34 35 
+          1: 36 37 38 39 40 41 42 43 44 45 46 
+          1: 1 47 48 49 
+          1: 1 47 48 50 51 
+          1: 1 6 7 8 9 10 11 12 13 14 15 16 52 53 54 55 56 57 58 
+          1: 1 6 7 8 59 60 61 62 63 64 65 
+          1: 1 26 66 
+          1: 1 26 67 
+          1: 68 69 70 10 11 71 
+Locations
+     1: 0x478bad M=1 runtime.gopark runtime/proc.go:435:0 s=418
+     2: 0x47a478 M=1 runtime.goparkunlock runtime/proc.go:441:0 s=440
+             sync.runtime_notifyListWait runtime/sema.go:597:0 s=572
+     3: 0x495de4 M=1 sync.(*Cond).Wait sync/cond.go:71:0 s=67
+     4: 0xc4c78a M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*pool).createConnections.func2 go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/pool.go:1165:0 s=1160
+     5: 0xc4c123 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*pool).createConnections go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/pool.go:1187:0 s=1143
+     6: 0x43c796 M=1 runtime.netpollblock runtime/netpoll.go:575:0 s=548
+     7: 0x477dc4 M=1 internal/poll.runtime_pollWait runtime/netpoll.go:351:0 s=342
+     8: 0x4f63a6 M=1 internal/poll.(*pollDesc).wait internal/poll/fd_poll_runtime.go:84:0 s=80
+     9: 0x4f7699 M=1 internal/poll.(*pollDesc).waitRead internal/poll/fd_poll_runtime.go:89:0 s=88
+             internal/poll.(*FD).Read internal/poll/fd_unix.go:165:0 s=141
+    10: 0x5a62c4 M=1 net.(*netFD).Read net/fd_posix.go:55:0 s=54
+    11: 0x5b5fa4 M=1 net.(*conn).Read net/net.go:194:0 s=190
+    12: 0x61aa7a M=1 crypto/tls.(*atLeastReader).Read crypto/tls/conn.go:809:0 s=805
+    13: 0x51fd97 M=1 bytes.(*Buffer).ReadFrom bytes/buffer.go:211:0 s=206
+    14: 0x61ac5d M=1 crypto/tls.(*Conn).readFromUntil crypto/tls/conn.go:831:0 s=822
+    15: 0x617d6e M=1 crypto/tls.(*Conn).readRecordOrCCS crypto/tls/conn.go:629:0 s=612
+    16: 0x61e544 M=1 crypto/tls.(*Conn).readRecord crypto/tls/conn.go:591:0 s=590
+             crypto/tls.(*Conn).Read crypto/tls/conn.go:1385:0 s=1371
+    17: 0x4c7e30 M=1 io.ReadAtLeast io/io.go:335:0 s=329
+    18: 0xc3ead0 M=1 io.ReadFull io/io.go:354:0 s=353
+             go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*connection).read go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/connection.go:523:0 s=494
+    19: 0xc3e4ab M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*connection).readWireMessage go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/connection.go:452:0 s=429
+    20: 0xc3f69c M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.initConnection.ReadWireMessage go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/connection.go:651:0 s=650
+    21: 0xbaf66b M=1 go.mongodb.org/mongo-driver/x/mongo/driver.Operation.readWireMessage go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/operation.go:1103:0 s=1102
+    22: 0xbb6dd2 M=1 go.mongodb.org/mongo-driver/x/mongo/driver.Operation.ExecuteExhaust go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/operation_exhaust.go:21:0 s=16
+    23: 0xbc8ba4 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/operation.(*Hello).StreamResponse go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/operation/hello.go:572:0 s=571
+    24: 0xc550b5 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*Server).check go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/server.go:862:0 s=817
+    25: 0xc52979 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*Server).update go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/server.go:605:0 s=545
+    26: 0x456576 M=1 runtime.selectgo runtime/select.go:351:0 s=122
+    27: 0x85b4ab M=1 google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run google.golang.org/grpc@v1.65.0/internal/grpcsync/callback_serializer.go:76:0 s=68
+    28: 0xc415f1 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*cancellListener).Listen go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/connection.go:928:0 s=925
+    29: 0xc4cdc9 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*pool).maintain go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/pool.go:1299:0 s=1262
+    30: 0xc4ec0f M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*rttMonitor).runHellos go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/rtt_monitor.go:156:0 s=149
+    31: 0xc4e957 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*rttMonitor).start go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/rtt_monitor.go:130:0 s=104
+    32: 0xc4e648 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*rttMonitor).connect.func1 go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/rtt_monitor.go:90:0 s=87
+    33: 0x4171a8 M=1 runtime.notetsleepg runtime/lock_futex.go:123:0 s=117
+    34: 0x47ad48 M=1 os/signal.signal_recv runtime/sigqueue.go:152:0 s=130
+    35: 0x76c0f2 M=1 os/signal.loop os/signal/signal_unix.go:23:0 s=21
+    36: 0x439290 M=1 runtime.goroutineProfileWithLabels runtime/mprof.go:1323:0 s=1318
+    37: 0x477a1c M=1 runtime.pprof_goroutineProfileWithLabels runtime/mprof.go:1314:0 s=1313
+    38: 0x74fb90 M=1 runtime/pprof.writeRuntimeProfile runtime/pprof/pprof.go:796:0 s=779
+    39: 0x74f9c4 M=1 runtime/pprof.writeGoroutine runtime/pprof/pprof.go:755:0 s=751
+    40: 0x74c7ea M=1 runtime/pprof.(*Profile).WriteTo runtime/pprof/pprof.go:377:0 s=372
+    41: 0x76616e M=1 net/http/pprof.handler.ServeHTTP net/http/pprof/pprof.go:272:0 s=250
+    42: 0x766c1d M=1 net/http/pprof.Index net/http/pprof/pprof.go:389:0 s=386
+    43: 0x6ebca8 M=1 net/http.HandlerFunc.ServeHTTP net/http/server.go:2294:0 s=2293
+    44: 0x6edba3 M=1 net/http.(*ServeMux).ServeHTTP net/http/server.go:2822:0 s=2808
+    45: 0x70b42d M=1 net/http.serverHandler.ServeHTTP net/http/server.go:3301:0 s=3292
+    46: 0x6ea1a4 M=1 net/http.(*conn).serve net/http/server.go:2102:0 s=1937
+    47: 0x411b04 M=1 runtime.chanrecv runtime/chan.go:664:0 s=521
+    48: 0x411691 M=1 runtime.chanrecv1 runtime/chan.go:506:0 s=505
+    49: 0xc5ca19 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*Topology).pollSRVRecords go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/topology.go:847:0 s=798
+    50: 0xd1b8d8 M=1 main.main gladis/cmd/bot/main.go:91:0 s=20
+    51: 0x443d2a M=1 runtime.main runtime/proc.go:283:0 s=147
+    52: 0x6678c2 M=1 bufio.(*Reader).fill bufio/bufio.go:113:0 s=99
+    53: 0x6679f2 M=1 bufio.(*Reader).Peek bufio/bufio.go:152:0 s=143
+    54: 0xca7cc4 M=1 github.com/gorilla/websocket.(*Conn).read github.com/gorilla/websocket@v1.4.2/conn.go:370:0 s=369
+    55: 0xca9cac M=1 github.com/gorilla/websocket.(*Conn).advanceFrame github.com/gorilla/websocket@v1.4.2/conn.go:798:0 s=787
+    56: 0xcaa7cc M=1 github.com/gorilla/websocket.(*Conn).NextReader github.com/gorilla/websocket@v1.4.2/conn.go:980:0 s=969
+    57: 0xcaae32 M=1 github.com/gorilla/websocket.(*Conn).ReadMessage github.com/gorilla/websocket@v1.4.2/conn.go:1064:0 s=1062
+    58: 0xcfc004 M=1 github.com/bwmarrin/discordgo.(*Session).listen github.com/bwmarrin/discordgo@v0.28.1/wsapi.go:216:0 s=210
+    59: 0x4fb774 M=1 internal/poll.(*pollDesc).waitRead internal/poll/fd_poll_runtime.go:89:0 s=88
+             internal/poll.(*FD).Accept internal/poll/fd_unix.go:620:0 s=601
+    60: 0x5a8268 M=1 net.(*netFD).accept net/fd_unix.go:172:0 s=171
+    61: 0x5bf2ba M=1 net.(*TCPListener).accept net/tcpsock_posix.go:159:0 s=158
+    62: 0x5be4af M=1 net.(*TCPListener).Accept net/tcpsock.go:380:0 s=376
+    63: 0x6ef68b M=1 net/http.(*Server).Serve net/http/server.go:3424:0 s=3394
+    64: 0x6ef290 M=1 net/http.(*Server).ListenAndServe net/http/server.go:3350:0 s=3338
+    65: 0xd1bb04 M=1 net/http.ListenAndServe net/http/server.go:3665:0 s=3663
+             main.main.func1 gladis/cmd/bot/main.go:24:0 s=22
+    66: 0xa31a3e M=1 go.opencensus.io/stats/view.(*worker).start go.opencensus.io@v0.24.0/stats/view/worker.go:292:0 s=287
+    67: 0xcfc80e M=1 github.com/bwmarrin/discordgo.(*Session).heartbeat github.com/bwmarrin/discordgo@v0.28.1/wsapi.go:314:0 s=278
+    68: 0x4d7fc4 M=1 syscall.Syscall syscall/syscall_linux.go:73:0 s=72
+    69: 0x4d64b7 M=1 syscall.read syscall/zsyscall_linux_amd64.go:736:0 s=729
+    70: 0x4f76cd M=1 syscall.Read syscall/syscall_unix.go:183:0 s=182
+             internal/poll.ignoringEINTRIO internal/poll/fd_unix.go:745:0 s=743
+             internal/poll.(*FD).Read internal/poll/fd_unix.go:161:0 s=141
+    71: 0x6e4076 M=1 net/http.(*connReader).backgroundRead net/http/server.go:690:0 s=689
+Mappings
+1: 0x400000/0xd87000/0x0 /app/discord-gemini-bot f50cf91c27e310aafdb039ab93a89954f2bc6442 [FN]
+2: 0x7763d8f53000/0x7763d8f55000/0x0 [vdso]  [FN]
+3: 0xffffffffff600000/0xffffffffff601000/0x0 [vsyscall]  [FN]

@@ -1,0 +1,210 @@
+PeriodType: space bytes
+Period: 524288
+Time: 2025-08-28 09:21:20.647968636 +0200 CEST
+Samples:
+alloc_objects/count alloc_space/bytes inuse_objects/count inuse_space/bytes
+          0          0          0          0: 1 2 3 4 5 
+          0          0          0          0: 6 7 8 9 10 11 12 13 14 
+          0          0          0          0: 15 16 17 18 19 20 21 22 23 24 11 12 13 14 
+          0          0          0          0: 25 26 27 28 29 22 23 30 31 32 33 34 
+          0          0          0          0: 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 22 23 30 31 32 33 34 
+          0          0          0          0: 52 53 54 55 53 54 56 57 58 59 23 30 31 32 33 34 
+       1024     524544          0          0: 35 36 60 61 62 63 64 42 43 44 45 46 47 48 49 50 51 22 23 30 31 32 65 66 67 
+                bytes:[512]
+        372     524992          0          0: 68 69 70 71 72 73 74 49 50 51 22 23 75 
+                bytes:[1408]
+      10923     524312          0          0: 76 77 78 79 70 71 72 73 74 49 50 51 22 23 75 
+                bytes:[48]
+          2     637974          0          0: 80 81 82 71 72 73 74 49 50 51 22 23 75 
+                bytes:[212992]
+       1638     524448          0          0: 83 84 85 86 87 78 79 88 71 72 73 74 49 50 51 22 23 75 
+                bytes:[320]
+        256     525312        256     525312: 89 90 91 92 93 94 95 96 
+                bytes:[2048]
+      21845     524300          0          0: 97 98 99 100 
+                bytes:[24]
+      16384     524304      16384     524304: 101 102 103 78 104 105 50 51 22 23 75 
+                bytes:[32]
+          8     557738          0          0: 106 107 108 72 109 110 111 112 113 114 115 116 117 118 119 14 
+                bytes:[65536]
+         13     545034         13     545034: 120 121 122 123 124 125 126 127 128 
+                bytes:[40960]
+         28     533557          0          0: 120 121 122 123 124 129 130 131 132 127 128 
+                bytes:[18432]
+      16384     524304      16384     524304: 133 72 134 135 
+                bytes:[32]
+       4681     524344          0          0: 136 137 137 137 138 139 140 127 128 
+                bytes:[112]
+        513    1050625        513    1050625: 89 90 91 92 93 94 141 142 143 
+                bytes:[2048]
+Locations
+     1: 0x7ca8cd M=1 encoding/json.(*Decoder).refill encoding/json/stream.go:159:0 s=146
+     2: 0x7ca564 M=1 encoding/json.(*Decoder).readValue encoding/json/stream.go:140:0 s=89
+     3: 0x7ca234 M=1 encoding/json.(*Decoder).Decode encoding/json/stream.go:63:0 s=49
+     4: 0xcfe593 M=1 github.com/bwmarrin/discordgo.(*Session).onEvent github.com/bwmarrin/discordgo@v0.28.1/wsapi.go:570:0 s=542
+     5: 0xcfbff4 M=1 github.com/bwmarrin/discordgo.(*Session).listen github.com/bwmarrin/discordgo@v0.28.1/wsapi.go:250:0 s=210
+     6: 0x529cde M=1 strings.genSplit strings/strings.go:305:0 s=291
+     7: 0x5f0db4 M=1 strings.Split strings/strings.go:361:0 s=361
+             crypto/x509.validHostname crypto/x509/verify.go:1051:0 s=1038
+     8: 0x5f1776 M=1 crypto/x509.validHostnameInput crypto/x509/verify.go:1033:0 s=1033
+             crypto/x509.(*Certificate).VerifyHostname crypto/x509/verify.go:1180:0 s=1162
+     9: 0x620074 M=1 crypto/tls.(*Conn).VerifyHostname crypto/tls/conn.go:1684:0 s=1672
+    10: 0xca6236 M=1 github.com/gorilla/websocket.doHandshake github.com/gorilla/websocket@v1.4.2/client.go:390:0 s=385
+    11: 0xca5449 M=1 github.com/gorilla/websocket.(*Dialer).DialContext github.com/gorilla/websocket@v1.4.2/client.go:319:0 s=149
+    12: 0xcfaec4 M=1 github.com/gorilla/websocket.(*Dialer).Dial github.com/gorilla/websocket@v1.4.2/client.go:106:0 s=105
+             github.com/bwmarrin/discordgo.(*Session).Open github.com/bwmarrin/discordgo@v0.28.1/wsapi.go:80:0 s=50
+    13: 0xd1b774 M=1 gladis/internal/discord.(*Bot).Start gladis/internal/discord/bot.go:272:0 s=271
+             main.main gladis/cmd/bot/main.go:78:0 s=20
+    14: 0x443d2a M=1 runtime.main runtime/proc.go:283:0 s=147
+    15: 0xd66836 M=1 crypto/internal/fips140/hmac.New[go.shape.interface { BlockSize int; Reset; Size int; Sum []uint8; Write  }] crypto/internal/fips140/hmac/hmac.go:132:0 s=131(crypto/internal/fips140/hmac.New[go.shape.interface { BlockSize() int; Reset(); Size() int; Sum([]uint8) []uint8; Write([]uint8) (int, error) }])
+    16: 0xd80479 M=1 crypto/internal/fips140/hkdf.Expand[go.shape.interface { BlockSize int; Reset; Size int; Sum []uint8; Write  }] crypto/internal/fips140/hkdf/hkdf.go:28:0 s=26(crypto/internal/fips140/hkdf.Expand[go.shape.interface { BlockSize() int; Reset(); Size() int; Sum([]uint8) []uint8; Write([]uint8) (int, error) }])
+    17: 0xd85744 M=1 crypto/internal/fips140/tls13.ExpandLabel[go.shape.interface { BlockSize int; Reset; Size int; Sum []uint8; Write  }] crypto/internal/fips140/tls13/tls13.go:39:0 s=20(crypto/internal/fips140/tls13.ExpandLabel[go.shape.interface { BlockSize() int; Reset(); Size() int; Sum([]uint8) []uint8; Write([]uint8) (int, error) }])
+    18: 0xd85428 M=1 crypto/internal/fips140/tls13.deriveSecret[go.shape.interface { BlockSize int; Reset; Size int; Sum []uint8; Write  }] crypto/internal/fips140/tls13/tls13.go:53:0 s=49(crypto/internal/fips140/tls13.deriveSecret[go.shape.interface { BlockSize() int; Reset(); Size() int; Sum([]uint8) []uint8; Write([]uint8) (int, error) }])
+    19: 0xd84e19 M=1 crypto/internal/fips140/tls13.(*EarlySecret).HandshakeSecret crypto/internal/fips140/tls13/tls13.go:96:0 s=95
+    20: 0x63037e M=1 crypto/tls.(*clientHandshakeStateTLS13).establishHandshakeKeys crypto/tls/handshake_client_tls13.go:514:0 s=474
+    21: 0x62e1bd M=1 crypto/tls.(*clientHandshakeStateTLS13).handshake crypto/tls/handshake_client_tls13.go:130:0 s=47
+    22: 0x627fcf M=1 crypto/tls.(*Conn).clientHandshake crypto/tls/handshake_client.go:379:0 s=266
+    23: 0x61efd9 M=1 crypto/tls.(*Conn).handshakeContext crypto/tls/conn.go:1568:0 s=1511
+    24: 0xca620b M=1 crypto/tls.(*Conn).HandshakeContext crypto/tls/conn.go:1508:0 s=1505
+             crypto/tls.(*Conn).Handshake crypto/tls/conn.go:1492:0 s=1491
+             github.com/gorilla/websocket.doHandshake github.com/gorilla/websocket@v1.4.2/client.go:386:0 s=385
+    25: 0xd35e19 M=1 crypto/internal/fips140/aes/gcm.NewGCMForTLS13 crypto/internal/fips140/aes/gcm/gcm_nonces.go:160:0 s=155
+    26: 0x6622b8 M=1 crypto/tls.aeadAESGCMTLS13 crypto/tls/cipher_suites.go:560:0 s=547
+    27: 0x615e55 M=1 crypto/tls.(*halfConn).setTrafficSecret crypto/tls/conn.go:235:0 s=231
+    28: 0x632b2b M=1 crypto/tls.(*clientHandshakeStateTLS13).sendClientFinished crypto/tls/handshake_client_tls13.go:837:0 s=826
+    29: 0x62e235 M=1 crypto/tls.(*clientHandshakeStateTLS13).handshake crypto/tls/handshake_client_tls13.go:145:0 s=47
+    30: 0x61ebfc M=1 crypto/tls.(*Conn).HandshakeContext crypto/tls/conn.go:1508:0 s=1505
+    31: 0xc3c916 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.clientHandshake go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/tls_connection_source_1_17.go:46:0 s=45
+             go.mongodb.org/mongo-driver/x/mongo/driver/topology.configureTLS go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/connection.go:160:0 s=140
+    32: 0xc3cf35 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*connection).connect go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/connection.go:249:0 s=176
+    33: 0xc4e927 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*rttMonitor).start go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/rtt_monitor.go:123:0 s=104
+    34: 0xc4e648 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*rttMonitor).connect.func1 go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/rtt_monitor.go:90:0 s=87
+    35: 0xd5e918 M=1 crypto/internal/fips140/bigmod.(*Nat).reset crypto/internal/fips140/bigmod/nat.go:96:0 s=94
+             crypto/internal/fips140/bigmod.(*Nat).set crypto/internal/fips140/bigmod/nat.go:132:0 s=131
+             crypto/internal/fips140/bigmod.(*Nat).maybeSubtractModulus crypto/internal/fips140/bigmod/nat.go:699:0 s=698
+    36: 0xd5fb1d M=1 crypto/internal/fips140/bigmod.(*Nat).montgomeryMul crypto/internal/fips140/bigmod/nat.go:844:0 s=778
+    37: 0xd5ddae M=1 crypto/internal/fips140/bigmod.rr crypto/internal/fips140/bigmod/nat.go:517:0 s=480
+    38: 0xd5e065 M=1 crypto/internal/fips140/bigmod.newModulus crypto/internal/fips140/bigmod/nat.go:577:0 s=569
+    39: 0xd5dee9 M=1 crypto/internal/fips140/bigmod.NewModulus crypto/internal/fips140/bigmod/nat.go:552:0 s=550
+    40: 0x5729c4 M=1 crypto/rsa.fipsPublicKey crypto/rsa/rsa.go:625:0 s=624
+    41: 0x56f752 M=1 crypto/rsa.VerifyPKCS1v15 crypto/rsa/fips.go:376:0 s=345
+    42: 0x5f5a70 M=1 crypto/x509.checkSignature crypto/x509/x509.go:1005:0 s=963
+    43: 0x5f53b0 M=1 crypto/x509.(*Certificate).CheckSignatureFrom crypto/x509/x509.go:930:0 s=911
+    44: 0x5f07f5 M=1 crypto/x509.(*Certificate).buildChains.func1 crypto/x509/verify.go:978:0 s=964
+    45: 0x5f04f7 M=1 crypto/x509.(*Certificate).buildChains crypto/x509/verify.go:1016:0 s=958
+    46: 0x5f0b99 M=1 crypto/x509.(*Certificate).buildChains.func1 crypto/x509/verify.go:1010:0 s=964
+    47: 0x5f054a M=1 crypto/x509.(*Certificate).buildChains crypto/x509/verify.go:1019:0 s=958
+    48: 0x5ef79e M=1 crypto/x509.(*Certificate).Verify crypto/x509/verify.go:838:0 s=780
+    49: 0x62cc5c M=1 crypto/tls.(*Conn).verifyServerCertificate crypto/tls/handshake_client.go:1145:0 s=1084
+    50: 0x6316ce M=1 crypto/tls.(*clientHandshakeStateTLS13).readServerCertificate crypto/tls/handshake_client_tls13.go:658:0 s=612
+    51: 0x62e1eb M=1 crypto/tls.(*clientHandshakeStateTLS13).handshake crypto/tls/handshake_client_tls13.go:136:0 s=47
+    52: 0x636fd4 M=1 vendor/golang.org/x/crypto/cryptobyte.(*Builder).add vendor/golang.org/x/crypto/cryptobyte/builder.go:308:0 s=294
+             vendor/golang.org/x/crypto/cryptobyte.(*Builder).AddBytes vendor/golang.org/x/crypto/cryptobyte/builder.go:110:0 s=109
+             crypto/tls.(*clientHelloMsg).marshalMsg.func18.4 crypto/tls/handshake_messages.go:367:0 s=366
+    53: 0x565ce1 M=1 vendor/golang.org/x/crypto/cryptobyte.(*Builder).callContinuation vendor/golang.org/x/crypto/cryptobyte/builder.go:184:0 s=164
+    54: 0x566070 M=1 vendor/golang.org/x/crypto/cryptobyte.(*Builder).addLengthPrefixed vendor/golang.org/x/crypto/cryptobyte/builder.go:209:0 s=187
+    55: 0x636e6b M=1 vendor/golang.org/x/crypto/cryptobyte.(*Builder).AddUint16LengthPrefixed vendor/golang.org/x/crypto/cryptobyte/builder.go:151:0 s=150
+             crypto/tls.(*clientHelloMsg).marshalMsg.func18 crypto/tls/handshake_messages.go:366:0 s=348
+    56: 0x6368b8 M=1 vendor/golang.org/x/crypto/cryptobyte.(*Builder).AddUint24LengthPrefixed vendor/golang.org/x/crypto/cryptobyte/builder.go:156:0 s=155
+             crypto/tls.(*clientHelloMsg).marshalMsg crypto/tls/handshake_messages.go:348:0 s=104
+    57: 0x63a514 M=1 crypto/tls.(*clientHelloMsg).marshal crypto/tls/handshake_messages.go:376:0 s=375
+    58: 0x61c095 M=1 crypto/tls.(*Conn).writeHandshakeRecord crypto/tls/conn.go:1052:0 s=1048
+    59: 0x627c04 M=1 crypto/tls.(*Conn).clientHandshake crypto/tls/handshake_client.go:325:0 s=266
+    60: 0xd611bd M=1 crypto/internal/fips140/bigmod.(*Nat).ExpShortVarTime crypto/internal/fips140/bigmod/nat.go:1051:0 s=1041
+    61: 0xd7f31e M=1 crypto/internal/fips140/rsa.encrypt crypto/internal/fips140/rsa/rsa.go:390:0 s=385
+    62: 0xd79c44 M=1 crypto/internal/fips140/rsa.verifyPKCS1v15 crypto/internal/fips140/rsa/pkcs1v15.go:115:0 s=101
+    63: 0xd79adb M=1 crypto/internal/fips140/rsa.VerifyPKCS1v15 crypto/internal/fips140/rsa/pkcs1v15.go:98:0 s=93
+    64: 0x56f79a M=1 crypto/rsa.VerifyPKCS1v15 crypto/rsa/fips.go:380:0 s=345
+    65: 0xc545d4 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*Server).setupHeartbeatConnection go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/server.go:763:0 s=750
+    66: 0xc54a27 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*Server).check go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/server.go:833:0 s=817
+    67: 0xc52979 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/topology.(*Server).update go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/topology/server.go:605:0 s=545
+    68: 0x578e52 M=1 encoding/pem.Decode encoding/pem/pem.go:171:0 s=89
+    69: 0x5de39a M=1 crypto/x509.(*CertPool).AppendCertsFromPEM crypto/x509/cert_pool.go:222:0 s=219
+    70: 0x5eb604 M=1 crypto/x509.loadSystemRoots crypto/x509/root_unix.go:72:0 s=32
+    71: 0x5eb155 M=1 crypto/x509.initSystemRoots crypto/x509/root.go:40:0 s=37
+    72: 0x49664a M=1 sync.(*Once).doSlow sync/once.go:78:0 s=73
+    73: 0x5eb004 M=1 sync.(*Once).Do sync/once.go:69:0 s=52
+             crypto/x509.systemRootsPool crypto/x509/root.go:31:0 s=30
+    74: 0x5ef5dc M=1 crypto/x509.(*Certificate).Verify crypto/x509/verify.go:816:0 s=780
+    75: 0x70128d M=1 crypto/tls.(*Conn).HandshakeContext crypto/tls/conn.go:1508:0 s=1505
+             net/http.(*persistConn).addTLS.func2 net/http/transport.go:1703:0 s=1699
+    76: 0x57c689 M=1 crypto/x509/pkix.(*Name).FillFromRDNSequence crypto/x509/pkix/pkix.go:151:0 s=144
+    77: 0x5e7ac7 M=1 crypto/x509.parseCertificate crypto/x509/parser.go:964:0 s=883
+    78: 0x5e893c M=1 crypto/x509.ParseCertificate crypto/x509/parser.go:1074:0 s=1073
+    79: 0x5de45d M=1 crypto/x509.(*CertPool).AppendCertsFromPEM crypto/x509/cert_pool.go:231:0 s=219
+    80: 0x504958 M=1 os.readFileContents os/file.go:826:0 s=808
+    81: 0x504808 M=1 os.ReadFile os/file.go:805:0 s=799
+    82: 0x5eb5e9 M=1 crypto/x509.loadSystemRoots crypto/x509/root_unix.go:70:0 s=32
+    83: 0x546fa4 M=1 math/big.nat.make math/big/nat.go:66:0 s=55
+             math/big.nat.setBytes math/big/nat.go:1332:0 s=1331
+    84: 0x563eeb M=1 math/big.(*Int).SetBytes math/big/int.go:512:0 s=511
+             vendor/golang.org/x/crypto/cryptobyte.(*String).readASN1BigInt vendor/golang.org/x/crypto/cryptobyte/asn1.go:330:0 s=315
+    85: 0x563d64 M=1 vendor/golang.org/x/crypto/cryptobyte.(*String).ReadASN1Integer vendor/golang.org/x/crypto/cryptobyte/asn1.go:290:0 s=273
+    86: 0x5e28e4 M=1 crypto/x509.parsePublicKey crypto/x509/parser.go:234:0 s=218
+    87: 0x5e7ec7 M=1 crypto/x509.parseCertificate crypto/x509/parser.go:1008:0 s=883
+    88: 0x5eb40c M=1 crypto/x509.loadSystemRoots crypto/x509/root_unix.go:44:0 s=32
+    89: 0x447c70 M=1 runtime.allocm runtime/proc.go:2276:0 s=2225
+    90: 0x4486f4 M=1 runtime.newm runtime/proc.go:2812:0 s=2799
+    91: 0x448dd8 M=1 runtime.startm runtime/proc.go:3038:0 s=2977
+    92: 0x478d4b M=1 runtime.wakep runtime/proc.go:3185:0 s=3154
+    93: 0x44b35d M=1 runtime.resetspinning runtime/proc.go:3937:0 s=3924
+    94: 0x44b7e9 M=1 runtime.schedule runtime/proc.go:4095:0 s=4043
+    95: 0x44bc04 M=1 runtime.park_m runtime/proc.go:4201:0 s=4150
+    96: 0x47eced M=1 runtime.mcall runtime/asm_amd64.s:459:0 s=429
+    97: 0x58ae18 M=1 internal/sync.(*HashTrieMap[go.shape.struct { net/netip.isV6 bool; net/netip.zoneV6 string },go.shape.struct { weak._ [0]*go.shape.struct { net/netip.isV6 bool; net/netip.zoneV6 string }; weak.u unsafe.Pointer }]).All internal/sync/hashtriemap.go:483:0 s=481
+    98: 0x58d7ad M=1 unique.addUniqueMap[go.shape.struct { net/netip.isV6 bool; net/netip.zoneV6 string }].func1 unique/handle.go:134:0 s=131
+    99: 0x57e212 M=1 unique.registerCleanup.func1 unique/handle.go:162:0 s=151
+   100: 0x423778 M=1 runtime.unique_runtime_registerUniqueMapCleanup.func2 runtime/mgc.go:1798:0 s=1795
+   101: 0x564584 M=1 vendor/golang.org/x/crypto/cryptobyte.(*String).ReadASN1ObjectIdentifier vendor/golang.org/x/crypto/cryptobyte/asn1.go:461:0 s=453
+   102: 0x5e2459 M=1 crypto/x509.parseExtension crypto/x509/parser.go:202:0 s=200
+   103: 0x5e8579 M=1 crypto/x509.parseCertificate crypto/x509/parser.go:1040:0 s=883
+   104: 0x60fd4f M=1 crypto/tls.(*certCache).newCert crypto/tls/cache.go:85:0 s=80
+   105: 0x62c298 M=1 crypto/tls.(*Conn).verifyServerCertificate crypto/tls/handshake_client.go:1088:0 s=1084
+   106: 0x5b9524 M=1 net.open net/parse.go:80:0 s=75
+   107: 0x5a51ee M=1 net.dnsReadConfig net/dnsconfig_unix.go:25:0 s=19
+   108: 0x5a1427 M=1 net.(*resolverConfig).init net/dnsclient_unix.go:377:0 s=374
+   109: 0x5a1538 M=1 sync.(*Once).Do sync/once.go:69:0 s=52
+             net.(*resolverConfig).tryUpdate net/dnsclient_unix.go:389:0 s=388
+   110: 0x5a18b2 M=1 net.getSystemDNSConfig net/dnsclient_unix.go:369:0 s=368
+             net.(*Resolver).lookup net/dnsclient_unix.go:452:0 s=441
+   111: 0x5b4aef M=1 net.(*Resolver).goLookupTXT net/lookup.go:848:0 s=847
+   112: 0x5b3275 M=1 net.(*Resolver).lookupTXT net/lookup_unix.go:112:0 s=111
+             net.LookupTXT net/lookup.go:623:0 s=622
+   113: 0xc23d25 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/dns.(*Resolver).GetConnectionArgsFromTXT go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/dns/dns.go:50:0 s=45
+   114: 0xc29cc4 M=1 go.mongodb.org/mongo-driver/x/mongo/driver/connstring.(*parser).parse go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/connstring/connstring.go:994:0 s=899
+   115: 0xc2484e M=1 go.mongodb.org/mongo-driver/x/mongo/driver/connstring.Parse go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/connstring/connstring.go:101:0 s=99
+   116: 0xc2477b M=1 go.mongodb.org/mongo-driver/x/mongo/driver/connstring.ParseAndValidate go.mongodb.org/mongo-driver@v1.17.4/x/mongo/driver/connstring/connstring.go:85:0 s=84
+   117: 0xc2c105 M=1 go.mongodb.org/mongo-driver/mongo/options.(*ClientOptions).ApplyURI go.mongodb.org/mongo-driver@v1.17.4/mongo/options/clientoptions.go:426:0 s=421
+   118: 0xc9e854 M=1 gladis/internal/database.InitMongoDB gladis/internal/database/mongodb.go:40:0 s=32
+   119: 0xd1b64d M=1 main.main gladis/cmd/bot/main.go:57:0 s=20
+   120: 0x77da44 M=1 google.golang.org/protobuf/reflect/protoregistry.(*Files).RegisterFile.func2 google.golang.org/protobuf@v1.34.2/reflect/protoregistry/registry.go:171:0 s=170
+   121: 0x77feb0 M=1 google.golang.org/protobuf/reflect/protoregistry.rangeTopLevelDescriptors google.golang.org/protobuf@v1.34.2/reflect/protoregistry/registry.go:417:0 s=406
+   122: 0x77d6c4 M=1 google.golang.org/protobuf/reflect/protoregistry.(*Files).RegisterFile google.golang.org/protobuf@v1.34.2/reflect/protoregistry/registry.go:170:0 s=114
+   123: 0x79b095 M=1 google.golang.org/protobuf/internal/filedesc.Builder.Build google.golang.org/protobuf@v1.34.2/internal/filedesc/build.go:112:0 s=91
+   124: 0x82cd7c M=1 google.golang.org/protobuf/internal/filetype.Builder.Build google.golang.org/protobuf@v1.34.2/internal/filetype/build.go:138:0 s=121
+   125: 0xa15637 M=1 google.golang.org/grpc/credentials/alts/internal/proto/grpc_gcp.file_grpc_gcp_handshaker_proto_init google.golang.org/grpc@v1.65.0/credentials/alts/internal/proto/grpc_gcp/handshaker.pb.go:1461:0 s=1310
+   126: 0xa1530e M=1 google.golang.org/grpc/credentials/alts/internal/proto/grpc_gcp.init.1 google.golang.org/grpc@v1.65.0/credentials/alts/internal/proto/grpc_gcp/handshaker.pb.go:1309:0 s=1309
+   127: 0x4529b7 M=1 runtime.doInit1 runtime/proc.go:7410:0 s=7381
+   128: 0x443de4 M=1 runtime.doInit runtime/proc.go:7377:0 s=7375
+             runtime.main runtime/proc.go:254:0 s=147
+   129: 0x956957 M=1 cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb.file_google_ai_generativelanguage_v1beta_content_proto_init cloud.google.com/go/ai@v0.8.0/generativelanguage/apiv1beta/generativelanguagepb/content.pb.go:1942:0 s=1718
+   130: 0x952aaf M=1 cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb.file_google_ai_generativelanguage_v1beta_cached_content_proto_init cloud.google.com/go/ai@v0.8.0/generativelanguage/apiv1beta/generativelanguagepb/cached_content.pb.go:426:0 s=422
+   131: 0x951b4f M=1 cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb.file_google_ai_generativelanguage_v1beta_cache_service_proto_init cloud.google.com/go/ai@v0.8.0/generativelanguage/apiv1beta/generativelanguagepb/cache_service.pb.go:577:0 s=573
+   132: 0x951b0e M=1 cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb.init.0 cloud.google.com/go/ai@v0.8.0/generativelanguage/apiv1beta/generativelanguagepb/cache_service.pb.go:572:0 s=572
+   133: 0xa2d899 M=1 go.opencensus.io/metric/metricproducer.GlobalManager.func1 go.opencensus.io@v0.24.0/metric/metricproducer/manager.go:37:0 s=36
+   134: 0xa2d5cb M=1 sync.(*Once).Do sync/once.go:69:0 s=52
+             go.opencensus.io/metric/metricproducer.GlobalManager go.opencensus.io@v0.24.0/metric/metricproducer/manager.go:36:0 s=35
+   135: 0xa319c4 M=1 go.opencensus.io/stats/view.(*worker).start go.opencensus.io@v0.24.0/stats/view/worker.go:288:0 s=287
+   136: 0x729e9e M=1 regexp/syntax.(*Regexp).Simplify regexp/syntax/simplify.go:98:0 s=14
+   137: 0x729a53 M=1 regexp/syntax.(*Regexp).Simplify regexp/syntax/simplify.go:23:0 s=14
+   138: 0x730bec M=1 regexp.compile regexp/regexp.go:175:0 s=167
+   139: 0x73170b M=1 regexp.Compile regexp/regexp.go:131:0 s=130
+             regexp.MustCompile regexp/regexp.go:311:0 s=310
+   140: 0xa23f92 M=1 go.opencensus.io/trace/tracestate.init go.opencensus.io@v0.24.0/trace/tracestate/tracestate.go:38:0 s=1
+   141: 0x4473ac M=1 runtime.mstart1 runtime/proc.go:1894:0 s=1856
+   142: 0x4472b4 M=1 runtime.mstart0 runtime/proc.go:1840:0 s=1814
+   143: 0x47ec64 M=1 runtime.mstart runtime/asm_amd64.s:395:0 s=394
+Mappings
+1: 0x400000/0xd87000/0x0 /app/discord-gemini-bot f50cf91c27e310aafdb039ab93a89954f2bc6442 [FN]
+2: 0x7763d8f53000/0x7763d8f55000/0x0 [vdso]  [FN]
+3: 0xffffffffff600000/0xffffffffff601000/0x0 [vsyscall]  [FN]
