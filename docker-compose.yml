@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  gladis-bot:
+    build: .
+    environment:
+      - DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+      - ENVIRONMENT=production
+      - GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+      - OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY
+      - WEBHOOK_URL=YOUR_WEBHOOK_URL
+      - LOG_LEVEL=INFO
+      - GIPHY_API_KEY=YOUR_GIPHY_API_KEY
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=gladis
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    environment:
+      - MONGO_INITDB_DATABASE=gladis
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
