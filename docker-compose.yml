@@ -13,17 +13,4 @@ services:
       - GIPHY_API_KEY=YOUR_GIPHY_API_KEY
       - MONGO_URI=mongodb://mongo:27017
       - MONGO_DB=gladis
-    depends_on:
-      - mongo
     restart: unless-stopped
-
-  mongo:
-    image: mongo:7.0
-    environment:
-      - MONGO_INITDB_DATABASE=gladis
-    volumes:
-      - mongo_data:/data/db
-    restart: unless-stopped
-
-volumes:
-  mongo_data:
